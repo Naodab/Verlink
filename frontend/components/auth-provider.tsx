@@ -71,13 +71,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
         body: JSON.stringify({ username: email, password }),
       })
-      const data = await response.json()
+      const responseJson = await response.json()
       if (!response.ok) {
-        throw new Error(data.message ?? "Login failed")
+        throw new Error(responseJson.message ?? "Login failed")
       }
-
+      const { data } = responseJson
       localStorage.setItem("verlink-token", data.token)
       setUser(data.user)
+      setIsLoading(false)
       return true
     } catch (error) {
       console.error("Login failed", error)
