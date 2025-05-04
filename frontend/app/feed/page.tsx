@@ -23,7 +23,7 @@ const MOCK_COMMENTS: CommentData[] = [
     createdAt: new Date(Date.now() - 3600000),
     author: {
       id: 1,
-      name: "Anna Nguyễn",
+      username: "Anna Nguyễn",
       image: "/placeholder.svg?height=40&width=40&text=AN",
     },
     likes: 5,
@@ -35,7 +35,7 @@ const MOCK_COMMENTS: CommentData[] = [
     createdAt: new Date(Date.now() - 7200000),
     author: {
       id: 3,
-      name: "Hương Lê",
+      username: "Hương Lê",
       image: "/placeholder.svg?height=40&width=40&text=HL",
     },
     likes: 2,
@@ -47,7 +47,7 @@ const MOCK_COMMENTS: CommentData[] = [
         createdAt: new Date(Date.now() - 3600000),
         author: {
           id: 2,
-          name: "Minh Trần",
+          username: "Minh Trần",
           image: "/placeholder.svg?height=40&width=40&text=MT",
         },
         likes: 1,
@@ -66,7 +66,7 @@ const POSTS: PostData[] = [
     createdAt: new Date(Date.now() - 3600000 * 2),
     author: {
       id: 2,
-      name: "Minh Trần",
+      username: "Minh Trần",
       image: "/placeholder.svg?height=40&width=40&text=MT",
       profileUrl: "/profile/2",
     },
@@ -82,7 +82,7 @@ const POSTS: PostData[] = [
     createdAt: new Date(Date.now() - 3600000 * 5),
     author: {
       id: 1,
-      name: "Anna Nguyễn",
+      username: "Anna Nguyễn",
       image: "/placeholder.svg?height=40&width=40&text=AN",
       profileUrl: "/profile/1",
     },
@@ -95,7 +95,7 @@ const POSTS: PostData[] = [
     createdAt: new Date(Date.now() - 3600000 * 10),
     author: {
       id: 4,
-      name: "Tuấn Phạm",
+      username: "Tuấn Phạm",
       image: "/placeholder.svg?height=40&width=40&text=TP",
       profileUrl: "/profile/4",
     },
@@ -113,7 +113,7 @@ const POSTS: PostData[] = [
     createdAt: new Date(Date.now() - 3600000 * 24),
     author: {
       id: 3,
-      name: "Hương Lê",
+      username: "Hương Lê",
       image: "/placeholder.svg?height=40&width=40&text=HL",
       profileUrl: "/profile/3",
     },
@@ -167,9 +167,9 @@ export default function FeedPage() {
       location: data.location,
       createdAt: new Date(),
       author: {
-        id: user?.id || "user",
-        name: user?.name || "User",
-        image: user?.profileImage,
+        id: user?.id ?? "user",
+        username: user?.username ?? "User",
+        image: user?.profileImage?.url ?? "/placeholder.svg",
         profileUrl: "/profile",
       },
       commentsCount: 0,
@@ -217,13 +217,13 @@ export default function FeedPage() {
               <CardContent className="p-4">
                 <div className="flex items-center space-x-3">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={user.profileImage || "/placeholder.svg"} alt={user.name} />
+                    <AvatarImage src={user.profileImage?.url || "/placeholder.svg"} alt={user.username} />
                     <AvatarFallback className="bg-primary text-primary-foreground">
-                      {user.name.charAt(0)}
+                      {user.username.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h3 className="font-medium text-sm">{user.name}</h3>
+                    <h3 className="font-medium text-sm">{user.username}</h3>
                     <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                   </div>
                 </div>

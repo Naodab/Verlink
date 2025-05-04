@@ -21,8 +21,8 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import io.github.cdimascio.dotenv.Dotenv;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -49,15 +49,17 @@ public class AuthenticationService implements AuthenticationUseCase {
     public AuthenticationService(final UserRepositoryPort userRepository,
                                  final InvalidatedTokenRepositoryPort tokenRepository,
                                  final PasswordEncoder passwordEncoder,
-                                 final Dotenv dotenv,
-                                 UserDTOMapper userDTOMapper) {
+                                 final UserDTOMapper userDTOMapper,
+                                 @Value("${DOXAN_SIGNER_KEY}") String signerKey,
+                                 @Value("${DOXAN_VALIDATION_DURATION}") String validationDuration,
+                                 @Value("${DOXAN_REFRESHABLE_DURATION}") String refreshableDuration) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
         this.passwordEncoder = passwordEncoder;
 
-        this.signerKey = dotenv.get("DOXAN_SIGNER_KEY");
-        this.validDuration = Long.parseLong(dotenv.get("DOXAN_VALIDATION_DURATION"));
-        this.refreshableDuration =  Long.parseLong(dotenv.get("DOXAN_REFRESHABLE_DURATION"));
+        this.signerKey = signerKey;
+        this.validDuration = Long.parseLong(validationDuration);
+        this.refreshableDuration =  Long.parseLong(refreshableDuration);
         this.userDTOMapper = userDTOMapper;
     }
 

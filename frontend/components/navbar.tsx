@@ -157,9 +157,9 @@ export function Navbar() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.profileImage || "/placeholder.svg"} alt={user.name} />
+                    <AvatarImage src={user.profileImage?.url || "/placeholder.svg"} alt={user.username} />
                     <AvatarFallback className="bg-primary text-primary-foreground">
-                      {user.name.charAt(0)}
+                      {user.username.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                 </Button>

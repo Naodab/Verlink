@@ -15,7 +15,7 @@ import {
 
 export interface CommentAuthor {
   id: string | number
-  name: string
+  username: string
   image?: string
   profileUrl?: string
 }
@@ -53,14 +53,14 @@ export function CommentItem({ comment, onReply, onLike, onDelete, isReply = fals
   return (
     <div className={`flex gap-2 ${isReply ? "ml-12 mt-2" : "mt-4"}`}>
       <Avatar className="h-8 w-8 flex-shrink-0">
-        <AvatarImage src={comment.author.image || "/placeholder.svg"} alt={comment.author.name} />
+        <AvatarImage src={comment.author.image ?? "/placeholder.svg"} alt={comment.author.username} />
         <AvatarFallback className="bg-primary/80 text-primary-foreground">
-          {comment.author.name.charAt(0)}
+          {comment.author.username.charAt(0)}
         </AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">
         <div className="bg-muted rounded-2xl px-3 py-2">
-          <div className="font-medium text-sm">{comment.author.name}</div>
+          <div className="font-medium text-sm">{comment.author.username}</div>
           <p className="text-sm break-words">{comment.content}</p>
         </div>
         <div className="flex items-center gap-2 mt-1 text-xs">

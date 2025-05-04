@@ -165,9 +165,9 @@ export function PostForm({ onSubmit }: PostFormProps) {
         <form onSubmit={handleSubmit}>
           <div className="flex space-x-4">
             <Avatar className="h-10 w-10">
-              <AvatarImage src={user?.profileImage || "/placeholder.svg"} alt={user?.name || ""} />
+              <AvatarImage src={user?.profileImage?.url ?? "/placeholder.svg"} alt={user?.username ?? ""} />
               <AvatarFallback className="bg-primary text-primary-foreground">
-                {user?.name?.charAt(0) || "U"}
+                {user?.username?.charAt(0) ?? "U"}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">

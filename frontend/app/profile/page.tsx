@@ -22,7 +22,7 @@ const MOCK_COMMENTS: CommentData[] = [
     createdAt: new Date(Date.now() - 3600000),
     author: {
       id: 1,
-      name: "Anna Nguyễn",
+      username: "Anna Nguyễn",
       image: "/placeholder.svg?height=40&width=40&text=AN",
     },
     likes: 5,
@@ -34,7 +34,7 @@ const MOCK_COMMENTS: CommentData[] = [
     createdAt: new Date(Date.now() - 7200000),
     author: {
       id: 3,
-      name: "Hương Lê",
+      username: "Hương Lê",
       image: "/placeholder.svg?height=40&width=40&text=HL",
     },
     likes: 2,
@@ -46,7 +46,7 @@ const MOCK_COMMENTS: CommentData[] = [
         createdAt: new Date(Date.now() - 3600000),
         author: {
           id: 2,
-          name: "Minh Trần",
+          username: "Minh Trần",
           image: "/placeholder.svg?height=40&width=40&text=MT",
         },
         likes: 1,
@@ -64,7 +64,7 @@ const PROFILE_POSTS: PostData[] = [
     createdAt: new Date(Date.now() - 3600000 * 24),
     author: {
       id: "1",
-      name: "John Doe",
+      username: "John Doe",
       image: "/placeholder.svg",
     },
     commentsCount: 5,
@@ -82,7 +82,7 @@ const PROFILE_POSTS: PostData[] = [
     createdAt: new Date(Date.now() - 3600000 * 72),
     author: {
       id: "1",
-      name: "John Doe",
+      username: "John Doe",
       image: "/placeholder.svg",
     },
     commentsCount: 12,
@@ -94,7 +94,7 @@ const PROFILE_POSTS: PostData[] = [
     createdAt: new Date(Date.now() - 3600000 * 120),
     author: {
       id: "1",
-      name: "John Doe",
+      username: "John Doe",
       image: "/placeholder.svg",
     },
     commentsCount: 3,
@@ -139,8 +139,8 @@ export default function ProfilePage() {
       createdAt: new Date(),
       author: {
         id: user?.id || "user",
-        name: user?.name || "User",
-        image: user?.profileImage,
+        username: user?.username || "User",
+        image: user?.profileImage?.url || "/placeholder.svg",
         profileUrl: "/profile",
       },
       commentsCount: 0,
@@ -193,9 +193,9 @@ export default function ProfilePage() {
         <div className="container relative">
           <div className="absolute -top-16 left-4 md:left-8">
             <Avatar className="h-32 w-32 border-4 border-background glow-effect">
-              <AvatarImage src={user.profileImage || "/placeholder.svg"} alt={user.name} />
+              <AvatarImage src={user.profileImage?.url || "/placeholder.svg"} alt={user.username} />
               <AvatarFallback className="text-4xl bg-primary text-primary-foreground">
-                {user.name.charAt(0)}
+                {user.username.charAt(0)}
               </AvatarFallback>
             </Avatar>
           </div>
@@ -207,7 +207,7 @@ export default function ProfilePage() {
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold gradient-text">{user.name}</h1>
+                <h1 className="text-2xl font-bold gradient-text">{user.username}</h1>
                 <p className="text-muted-foreground">{user.email}</p>
                 <div className="flex items-center mt-4 space-x-6">
                   <div className="flex flex-col items-center">
@@ -269,8 +269,8 @@ export default function ProfilePage() {
                   ...post,
                   author: {
                     ...post.author,
-                    name: user.name,
-                    image: user.profileImage || "/placeholder.svg",
+                    username: user.username,
+                    image: user.profileImage?.url || "/placeholder.svg",
                   },
                 }}
                 onCommentClick={handleCommentClick}

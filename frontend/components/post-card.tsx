@@ -19,7 +19,7 @@ import type { CommentData } from "./comments/comment-item"
 
 export interface PostAuthor {
   id: string | number
-  name: string
+  username: string
   image?: string
   profileUrl?: string
 }
@@ -74,15 +74,15 @@ export function PostCard({ post, onCommentClick, onShareClick }: PostCardProps) 
   return (
     <Card className="overflow-hidden card-hover mb-6">
       <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-        <Link href={post.author.profileUrl || `/profile/${post.author.id}`} className="flex items-center flex-1">
+        <Link href={post.author.profileUrl ?? `/profile/${post.author.id}`} className="flex items-center flex-1">
           <Avatar className="h-10 w-10 mr-4">
-            <AvatarImage src={post.author.image || "/placeholder.svg"} alt={post.author.name} />
+            <AvatarImage src={post.author.image ?? "/placeholder.svg"} alt={post.author.username} />
             <AvatarFallback className="bg-primary/80 text-primary-foreground">
-              {post.author.name.charAt(0)}
+              {post.author.username.charAt(0)}
             </AvatarFallback>
           </Avatar>
           <div>
-            <div className="font-semibold">{post.author.name}</div>
+            <div className="font-semibold">{post.author.username}</div>
             <div className="flex items-center text-xs text-muted-foreground">
               <span>{formattedDate}</span>
               {post.location && (

@@ -3,12 +3,22 @@
 import type React from "react"
 
 import { createContext, useContext, useEffect, useState } from "react"
+import apiUrl from "@/lib/auth";
 
 type User = {
   id: string
-  name: string
+  username: string
   email: string
-  profileImage?: string
+  phone: string
+  firstName: string
+  lastName: string
+  gender: string
+  dob: string
+  createdAt: string
+  profileImage?: {
+    url: string
+    mimeType: string
+  }
 }
 
 type AuthContextType = {
@@ -26,17 +36,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Check if user is logged in
     const token = localStorage.getItem("verlink-token")
     if (token) {
-      // In a real app, you would verify the token with your backend
       try {
-        // Mock user data for demonstration
         setUser({
           id: "1",
-          name: "John Doe",
+          username: "John Doe",
           email: "john@example.com",
-          profileImage: "/placeholder.svg?height=40&width=40",
+          phone: "1234567890",
+          firstName: "John",
+          lastName: "Doe",
+          gender: "Male",
+          dob: "1990-01-01",
+          createdAt: "2023-01-01T00:00:00Z",
+          profileImage: {
+            url: "/placeholder.svg?height=40&width=40",
+            mimeType: "image/svg+xml",
+          }
         })
       } catch (error) {
         console.error("Invalid token", error)
@@ -49,20 +65,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true)
-      // In a real app, you would make an API call to your backend
-      // Mock successful login
-      const mockResponse = {
-        user: {
-          id: "1",
-          name: "John Doe",
-          email,
-          profileImage: "/placeholder.svg?height=40&width=40",
+      alert(apiUrl)
+      const response = await fetch(`${apiUrl}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-        token: "mock-jwt-token",
+        body: JSON.stringify({ username: email, password }),
+      })
+      const responseJson = await response.json()
+      if (!response.ok) {
+        throw new Error(responseJson.message ?? "Login failed")
       }
-
-      localStorage.setItem("verlink-token", mockResponse.token)
-      setUser(mockResponse.user)
+      const { data } = responseJson
+      localStorage.setItem("verlink-token", data.token)
+      setUser(data.user)
+      setIsLoading(false)
       return true
     } catch (error) {
       console.error("Login failed", error)
@@ -75,20 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (name: string, email: string, password: string) => {
     try {
       setIsLoading(true)
-      // In a real app, you would make an API call to your backend
-      // Mock successful registration
-      const mockResponse = {
-        user: {
-          id: "1",
-          name,
-          email,
-          profileImage: "/placeholder.svg?height=40&width=40",
-        },
-        token: "mock-jwt-token",
-      }
-
-      localStorage.setItem("verlink-token", mockResponse.token)
-      setUser(mockResponse.user)
+      
       return true
     } catch (error) {
       console.error("Registration failed", error)

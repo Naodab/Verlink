@@ -34,8 +34,8 @@ export function CommentsSection({ postId, initialComments = [] }: CommentsSectio
                 createdAt: new Date(),
                 author: {
                   id: user.id,
-                  name: user.name,
-                  image: user.profileImage,
+                  username: user.username,
+                  image: user.profileImage?.url,
                 },
                 likes: 0,
               },
@@ -54,8 +54,8 @@ export function CommentsSection({ postId, initialComments = [] }: CommentsSectio
         createdAt: new Date(),
         author: {
           id: user.id,
-          name: user.name,
-          image: user.profileImage,
+          username: user.username,
+          image: user.profileImage?.url,
         },
         likes: 0,
       }
@@ -66,7 +66,7 @@ export function CommentsSection({ postId, initialComments = [] }: CommentsSectio
   const handleReply = (commentId: string | number) => {
     const comment = comments.find((c) => c.id === commentId)
     if (comment) {
-      setReplyingTo({ commentId, authorName: comment.author.name })
+      setReplyingTo({ commentId, authorName: comment.author.username })
     }
   }
 
@@ -146,8 +146,8 @@ export function CommentsSection({ postId, initialComments = [] }: CommentsSectio
 
       {user && (
         <CommentInput
-          userImage={user.profileImage}
-          userName={user.name}
+          userImage={user.profileImage?.url}
+          userName={user.username}
           onSubmit={handleAddComment}
           replyingTo={replyingTo?.authorName}
           onCancelReply={() => setReplyingTo(null)}

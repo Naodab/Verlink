@@ -2,7 +2,7 @@ package com.doxan.doxan.adapter.out.security;
 
 import com.doxan.doxan.application.usecase.AuthenticationService;
 import com.doxan.doxan.domain.dto.request.auth.IntrospectRequest;
-import io.github.cdimascio.dotenv.Dotenv;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -19,9 +19,9 @@ public class CustomJwtDecoder implements JwtDecoder {
     private final AuthenticationService authenticationService;
 
     public CustomJwtDecoder(final AuthenticationService authenticationService,
-                            final Dotenv dotenv) {
+                            @Value("${DOXAN_SIGNER_KEY}") String signerKey) {
         this.authenticationService = authenticationService;
-        this.signerKey = dotenv.get("DOXAN_SIGNER_KEY");
+        this.signerKey = signerKey;
     }
 
     private NimbusJwtDecoder nimbusJwtDecoder = null;
