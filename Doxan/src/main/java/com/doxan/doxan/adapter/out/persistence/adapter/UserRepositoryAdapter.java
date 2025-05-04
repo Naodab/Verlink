@@ -147,44 +147,45 @@ public class UserRepositoryAdapter implements UserRepositoryPort {
     @Override
     @Retry(name = "redisCalls")
     public boolean existsByEmail(String email) {
-        if (!cacheEnabled) {
-            return jpaUserRepository.existsByEmail(email);
-        }
-
-        emailLock.readLock().lock();
-        try {
-            Boolean exists = redisTemplate.opsForSet().isMember(EMAIL_SET, email);
-            if (Boolean.TRUE.equals(exists)) {
-                return true;
-            }
-
-            emailLock.readLock().unlock();
-            emailLock.writeLock().lock();
-            try {
-                exists = redisTemplate.opsForSet().isMember(EMAIL_SET, email);
-                if (Boolean.TRUE.equals(exists)) {
-                    return true;
-                }
-
-                boolean dbExists = jpaUserRepository.existsByEmail(email);
-                if (dbExists) {
-                    try {
-                        redisTemplate.opsForSet().add(EMAIL_SET, email);
-                    } catch (Exception e) {
-                        log.warn("Cannot update email cache for {}", email, e);
-                    }
-                }
-                return dbExists;
-            } finally {
-                emailLock.readLock().lock();
-                emailLock.writeLock().unlock();
-            }
-        } catch (Exception e) {
-            log.warn("Redis error when checking email existence, falling back to DB", e);
-            return jpaUserRepository.existsByEmail(email);
-        } finally {
-            emailLock.readLock().unlock();
-        }
+//        if (!cacheEnabled) {
+//            return jpaUserRepository.existsByEmail(email);
+//        }
+//
+//        emailLock.readLock().lock();
+//        try {
+//            Boolean exists = redisTemplate.opsForSet().isMember(EMAIL_SET, email);
+//            if (Boolean.TRUE.equals(exists)) {
+//                return true;
+//            }
+//
+//            emailLock.readLock().unlock();
+//            emailLock.writeLock().lock();
+//            try {
+//                exists = redisTemplate.opsForSet().isMember(EMAIL_SET, email);
+//                if (Boolean.TRUE.equals(exists)) {
+//                    return true;
+//                }
+//
+//                boolean dbExists = jpaUserRepository.existsByEmail(email);
+//                if (dbExists) {
+//                    try {
+//                        redisTemplate.opsForSet().add(EMAIL_SET, email);
+//                    } catch (Exception e) {
+//                        log.warn("Cannot update email cache for {}", email, e);
+//                    }
+//                }
+//                return dbExists;
+//            } finally {
+//                emailLock.readLock().lock();
+//                emailLock.writeLock().unlock();
+//            }
+//        } catch (Exception e) {
+//            log.warn("Redis error when checking email existence, falling back to DB", e);
+//            return jpaUserRepository.existsByEmail(email);
+//        } finally {
+//            emailLock.readLock().unlock();
+//        }
+        return jpaUserRepository.existsByEmail(email);
     }
 
     @Override

@@ -50,9 +50,9 @@ public class AuthenticationService implements AuthenticationUseCase {
                                  final InvalidatedTokenRepositoryPort tokenRepository,
                                  final PasswordEncoder passwordEncoder,
                                  final UserDTOMapper userDTOMapper,
-                                 @Value("${DOXAN_SIGNER_KEY}") String signerKey,
-                                 @Value("${DOXAN_VALIDATION_DURATION}") String validationDuration,
-                                 @Value("${DOXAN_REFRESHABLE_DURATION}") String refreshableDuration) {
+                                 @Value("${jwt.signerKey}") String signerKey,
+                                 @Value("${jwt.validDuration}") String validationDuration,
+                                 @Value("${jwt.refreshableDuration}") String refreshableDuration) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
         this.passwordEncoder = passwordEncoder;

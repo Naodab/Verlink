@@ -83,40 +83,40 @@ export function PostForm({ onSubmit }: PostFormProps) {
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          try {
-            const { latitude, longitude } = position.coords
-            // Sử dụng Nominatim OpenStreetMap API (miễn phí) thay vì Google Maps
-            const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
-            )
-            const data = await response.json()
+          async (position) => {
+            try {
+              const { latitude, longitude } = position.coords
+              // Sử dụng Nominatim OpenStreetMap API (miễn phí) thay vì Google Maps
+              const response = await fetch(
+                  `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+              )
+              const data = await response.json()
 
-            // Lấy thông tin địa điểm
-            let locationName = ""
-            if (data.address) {
-              const { road, suburb, city, town, village, state, country } = data.address
-              locationName = [road, suburb, city || town || village, state, country]
-                .filter(Boolean)
-                .slice(0, 2)
-                .join(", ")
-            } else {
-              locationName = data.display_name.split(",").slice(0, 2).join(",")
+              // Lấy thông tin địa điểm
+              let locationName = ""
+              if (data.address) {
+                const { road, suburb, city, town, village, state, country } = data.address
+                locationName = [road, suburb, city || town || village, state, country]
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .join(", ")
+              } else {
+                locationName = data.display_name.split(",").slice(0, 2).join(",")
+              }
+
+              setLocation(locationName)
+            } catch (error) {
+              console.error("Error getting location:", error)
+              setLocation("Không thể xác định vị trí")
+            } finally {
+              setIsLoadingLocation(false)
             }
-
-            setLocation(locationName)
-          } catch (error) {
-            console.error("Error getting location:", error)
+          },
+          (error) => {
+            console.error("Error getting geolocation:", error)
             setLocation("Không thể xác định vị trí")
-          } finally {
             setIsLoadingLocation(false)
-          }
-        },
-        (error) => {
-          console.error("Error getting geolocation:", error)
-          setLocation("Không thể xác định vị trí")
-          setIsLoadingLocation(false)
-        },
+          },
       )
     } else {
       setLocation("Trình duyệt không hỗ trợ định vị")
@@ -160,185 +160,207 @@ export function PostForm({ onSubmit }: PostFormProps) {
   }, [imagePreviewUrls, videoPreviewUrls])
 
   return (
-    <Card className="card-hover">
-      <CardContent className="pt-6">
-        <form onSubmit={handleSubmit}>
-          <div className="flex space-x-4">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={user?.profileImage?.url ?? "/placeholder.svg"} alt={user?.username ?? ""} />
-              <AvatarFallback className="bg-primary text-primary-foreground">
-                {user?.username?.charAt(0) ?? "U"}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <Textarea
-                placeholder="Bạn đang nghĩ gì?"
-                className="resize-none border-none focus-visible:ring-1 focus-visible:ring-primary/50 bg-muted/50"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-              />
+      <Card className="card-hover">
+        <CardContent className="pt-6">
+          <form onSubmit={handleSubmit}>
+            <div className="flex space-x-4">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={user?.profileImage?.url ?? "/placeholder.svg"} alt={user?.username ?? ""} />
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {user?.username?.charAt(0) ?? "U"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <Textarea
+                    placeholder="Bạn đang nghĩ gì?"
+                    className="resize-none border-none focus-visible:ring-1 focus-visible:ring-primary/50 bg-muted/50"
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                />
 
-              {/* Image Previews */}
-              {imagePreviewUrls.length > 0 && (
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  {imagePreviewUrls.map((url, index) => (
-                    <div key={`img-${index}`} className="relative rounded-md overflow-hidden">
-                      <img
-                        src={url || "/placeholder.svg"}
-                        alt={`Preview ${index + 1}`}
-                        className="w-full h-32 object-cover"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6 rounded-full"
-                        onClick={() => removeImage(index)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Video Previews */}
-              {videoPreviewUrls.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  {videoPreviewUrls.map((url, index) => (
-                    <div key={`video-${index}`} className="relative rounded-md overflow-hidden">
-                      <video src={url} controls className="w-full h-48 object-cover" />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6 rounded-full"
-                        onClick={() => removeVideo(index)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Location */}
-              {location && (
-                <div className="mt-3 flex items-center bg-muted/50 rounded-md p-2">
-                  <MapPin className="h-4 w-4 mr-2 text-primary" />
-                  <span className="text-sm">{location}</span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 ml-auto"
-                    onClick={() => setLocation(null)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              )}
-
-              <div className="mt-4 flex items-center">
-                <div className="flex space-x-2 flex-1">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground"
-                    onClick={() => imageInputRef.current?.click()}
-                  >
-                    <ImageIcon className="h-4 w-4 mr-2" />
-                    Ảnh
-                  </Button>
-                  <input
-                    ref={imageInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={handleImageChange}
-                  />
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground"
-                    onClick={() => videoInputRef.current?.click()}
-                  >
-                    <Video className="h-4 w-4 mr-2" />
-                    Video
-                  </Button>
-                  <input
-                    ref={videoInputRef}
-                    type="file"
-                    accept="video/*"
-                    multiple
-                    className="hidden"
-                    onChange={handleVideoChange}
-                  />
-
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button type="button" variant="ghost" size="sm" className="text-muted-foreground">
-                        <Smile className="h-4 w-4 mr-2" />
-                        Cảm xúc
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-2">
-                      <div className="flex flex-wrap gap-1">
-                        {emojis.map((emoji) => (
-                          <Button
-                            key={emoji}
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                            onClick={() => handleEmojiClick(emoji)}
+                {/* Image Previews */}
+                {imagePreviewUrls.length > 0 && (
+                    <div className={`mt-3 grid gap-2 ${imagePreviewUrls.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+                      {imagePreviewUrls.map((url, index) => (
+                          <div
+                              key={`img-${index}`}
+                              className={`relative rounded-md overflow-hidden ${
+                                  imagePreviewUrls.length === 1
+                                      ? "aspect-video"
+                                      : imagePreviewUrls.length === 2
+                                          ? "aspect-square"
+                                          : index === 0 && imagePreviewUrls.length >= 3
+                                              ? "row-span-2 aspect-[4/5]"
+                                              : "aspect-square"
+                              }`}
                           >
-                            {emoji}
-                          </Button>
-                        ))}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                            <img
+                                src={url || "/placeholder.svg"}
+                                alt={`Preview ${index + 1}`}
+                                className="w-full h-full object-cover"
+                            />
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-1 right-1 h-6 w-6 rounded-full"
+                                onClick={() => removeImage(index)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                      ))}
+                    </div>
+                )}
 
+                {/* Video Previews */}
+                {videoPreviewUrls.length > 0 && (
+                    <div className={`mt-3 grid gap-2 ${videoPreviewUrls.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+                      {videoPreviewUrls.map((url, index) => (
+                          <div
+                              key={`video-${index}`}
+                              className={`relative rounded-md overflow-hidden ${
+                                  videoPreviewUrls.length === 1
+                                      ? "aspect-video"
+                                      : videoPreviewUrls.length === 2
+                                          ? "aspect-square"
+                                          : index === 0 && videoPreviewUrls.length >= 3
+                                              ? "row-span-2 aspect-[4/5]"
+                                              : "aspect-square"
+                              }`}
+                          >
+                            <video src={url} controls className="w-full h-full object-cover" />
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-1 right-1 h-6 w-6 rounded-full"
+                                onClick={() => removeVideo(index)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                      ))}
+                    </div>
+                )}
+
+                {/* Location */}
+                {location && (
+                    <div className="mt-3 flex items-center bg-muted/50 rounded-md p-2">
+                      <MapPin className="h-4 w-4 mr-2 text-primary" />
+                      <span className="text-sm">{location}</span>
+                      <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 ml-auto"
+                          onClick={() => setLocation(null)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                )}
+
+                <div className="mt-4 flex items-center">
+                  <div className="flex space-x-2 flex-1">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground"
+                        onClick={() => imageInputRef.current?.click()}
+                    >
+                      <ImageIcon className="h-4 w-4 mr-2" />
+                      Ảnh
+                    </Button>
+                    <input
+                        ref={imageInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        onChange={handleImageChange}
+                    />
+
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground"
+                        onClick={() => videoInputRef.current?.click()}
+                    >
+                      <Video className="h-4 w-4 mr-2" />
+                      Video
+                    </Button>
+                    <input
+                        ref={videoInputRef}
+                        type="file"
+                        accept="video/*"
+                        multiple
+                        className="hidden"
+                        onChange={handleVideoChange}
+                    />
+
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button type="button" variant="ghost" size="sm" className="text-muted-foreground">
+                          <Smile className="h-4 w-4 mr-2" />
+                          Cảm xúc
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-2">
+                        <div className="flex flex-wrap gap-1">
+                          {emojis.map((emoji) => (
+                              <Button
+                                  key={emoji}
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                  onClick={() => handleEmojiClick(emoji)}
+                              >
+                                {emoji}
+                              </Button>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground"
+                        onClick={getLocation}
+                        disabled={isLoadingLocation}
+                    >
+                      {isLoadingLocation ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                          <MapPin className="h-4 w-4 mr-2" />
+                      )}
+                      Vị trí
+                    </Button>
+                  </div>
                   <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground"
-                    onClick={getLocation}
-                    disabled={isLoadingLocation}
+                      type="submit"
+                      className="bg-primary text-primary-foreground hover:bg-primary/90"
+                      disabled={(content.trim() === "" && images.length === 0 && videos.length === 0) || isSubmitting}
                   >
-                    {isLoadingLocation ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {isSubmitting ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Đang đăng...
+                        </>
                     ) : (
-                      <MapPin className="h-4 w-4 mr-2" />
+                        "Đăng"
                     )}
-                    Vị trí
                   </Button>
                 </div>
-                <Button
-                  type="submit"
-                  className="bg-primary text-primary-foreground hover:bg-primary/90"
-                  disabled={(content.trim() === "" && images.length === 0 && videos.length === 0) || isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Đang đăng...
-                    </>
-                  ) : (
-                    "Đăng"
-                  )}
-                </Button>
               </div>
             </div>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+          </form>
+        </CardContent>
+      </Card>
   )
 }
