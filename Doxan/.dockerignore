@@ -1,0 +1,16 @@
+# Maven/Gradle cache
+target
+build
+
+# IDE files
+.idea
+*.iml
+
+# OS files
+.DS_Store
+
+# Env file (đã dùng env_file)
+.env
+
+Dockerfile
+compose.yaml

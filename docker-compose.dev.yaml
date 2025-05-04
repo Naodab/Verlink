@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: verlink-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: verlink_db
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend-net
+
+  redis:
+    image: redis:7
+    container_name: verlink-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - backend-net
+
+  backend:
+    build:
+      context: ./Doxan
+      dockerfile: Dockerfile.dev.backend
+    container_name: verlink-backend
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./Doxan:/app
+      - ~/.m2:/root/.m2
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/verlink_db
+      SPRING_DATASOURCE_USERNAME: myuser
+      SPRING_DATASOURCE_PASSWORD: secret
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      CLOUDINARY_URL: ${CLOUDINARY_URL}
+    ports:
+      - "8080:8080"
+    networks:
+      - backend-net
+    env_file:
+      - ./Doxan/.env
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev.frontend
+    container_name: verlink-frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - backend-net
+    env_file:
+      - ./frontend/.env.local
+
+volumes:
+  postgres_data:
+
+networks:
+  backend-net:
+    driver: bridge

@@ -1,0 +1,12 @@
+# Node modules (sẽ được cài trong container)
+node_modules
+npm-debug.log
+.next
+out
+
+.DS_Store
+
+.env
+.env.local
+
+Dockerfile
