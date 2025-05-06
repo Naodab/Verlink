@@ -42,7 +42,7 @@ export function PostReactions({ postId }: PostReactionsProps) {
     if (currentReaction === reaction) {
       setReactionCounts((prev) => ({
         ...prev,
-        [reaction!]: Math.max(0, prev[reaction as keyof typeof prev] - 1),
+        [reaction]: Math.max(0, prev[reaction as keyof typeof prev] - 1),
       }))
       setCurrentReaction(null)
     }

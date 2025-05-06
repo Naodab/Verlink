@@ -260,14 +260,13 @@ let websocketInstance: WebSocketService | null = null
 export const getWebSocketService = () => {
   if (!isClient) {
     // Trả về một đối tượng giả nếu không phải môi trường client
-    const mockWebSocketService: Pick<WebSocketService, 'connect' | 'disconnect' | 'on' | 'off' | 'send'> = {
+    return {
       connect: () => {},
       disconnect: () => {},
       on: () => () => {},
       off: () => {},
       send: () => {},
-    };
-    return mockWebSocketService;
+    } as WebSocketService
   }
 
   if (!websocketInstance) {

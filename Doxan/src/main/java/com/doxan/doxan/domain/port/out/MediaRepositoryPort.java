@@ -11,4 +11,5 @@ public interface MediaRepositoryPort {
     List<Media> findAllByTargetId(String targetId);
     List<Media> findAllByIds(List<String> mediaIds);
     void deleteById(String id);
+    void deleteAllByTargetId(String targetId);
 }

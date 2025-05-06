@@ -52,11 +52,14 @@ export function CommentInput({
     inputRef.current?.focus()
   }
 
+  // Ensure userName is defined before using charAt
+  const userInitial = userName && typeof userName === "string" ? userName.charAt(0) : "U"
+
   return (
     <form onSubmit={handleSubmit} className="flex items-center gap-2 mt-3">
       <Avatar className="h-8 w-8 flex-shrink-0">
-        <AvatarImage src={userImage || "/placeholder.svg"} alt={userName} />
-        <AvatarFallback className="bg-primary/80 text-primary-foreground">{userName.charAt(0)}</AvatarFallback>
+        <AvatarImage src={userImage || "/placeholder.svg"} alt={userName || "User"} />
+        <AvatarFallback className="bg-primary/80 text-primary-foreground">{userInitial}</AvatarFallback>
       </Avatar>
       <div className="flex-1 flex items-center bg-muted rounded-full px-3 py-1">
         {replyingTo && (

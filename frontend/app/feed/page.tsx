@@ -9,11 +9,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { User, Users, Bookmark, Calendar } from "lucide-react"
+import { User, Users, Bookmark, Calendar, Cake, MapPin, Sparkles, Newspaper, Compass } from "lucide-react"
 import { PostCard, type PostData } from "@/components/post-card"
 import { FriendChatButton } from "@/components/friends/friend-chat-button"
 import { PostForm } from "@/components/post/post-form"
 import type { CommentData } from "@/components/comments/comment-item"
+import { Button } from "@/components/ui/button"
 
 // Mock comments data
 const MOCK_COMMENTS: CommentData[] = [
@@ -23,7 +24,7 @@ const MOCK_COMMENTS: CommentData[] = [
     createdAt: new Date(Date.now() - 3600000),
     author: {
       id: 1,
-      username: "Anna Nguyễn",
+      name: "Anna Nguyễn",
       image: "/placeholder.svg?height=40&width=40&text=AN",
     },
     likes: 5,
@@ -35,7 +36,7 @@ const MOCK_COMMENTS: CommentData[] = [
     createdAt: new Date(Date.now() - 7200000),
     author: {
       id: 3,
-      username: "Hương Lê",
+      name: "Hương Lê",
       image: "/placeholder.svg?height=40&width=40&text=HL",
     },
     likes: 2,
@@ -47,7 +48,7 @@ const MOCK_COMMENTS: CommentData[] = [
         createdAt: new Date(Date.now() - 3600000),
         author: {
           id: 2,
-          username: "Minh Trần",
+          name: "Minh Trần",
           image: "/placeholder.svg?height=40&width=40&text=MT",
         },
         likes: 1,
@@ -66,7 +67,7 @@ const POSTS: PostData[] = [
     createdAt: new Date(Date.now() - 3600000 * 2),
     author: {
       id: 2,
-      username: "Minh Trần",
+      name: "Minh Trần",
       image: "/placeholder.svg?height=40&width=40&text=MT",
       profileUrl: "/profile/2",
     },
@@ -82,7 +83,7 @@ const POSTS: PostData[] = [
     createdAt: new Date(Date.now() - 3600000 * 5),
     author: {
       id: 1,
-      username: "Anna Nguyễn",
+      name: "Anna Nguyễn",
       image: "/placeholder.svg?height=40&width=40&text=AN",
       profileUrl: "/profile/1",
     },
@@ -95,7 +96,7 @@ const POSTS: PostData[] = [
     createdAt: new Date(Date.now() - 3600000 * 10),
     author: {
       id: 4,
-      username: "Tuấn Phạm",
+      name: "Tuấn Phạm",
       image: "/placeholder.svg?height=40&width=40&text=TP",
       profileUrl: "/profile/4",
     },
@@ -113,7 +114,7 @@ const POSTS: PostData[] = [
     createdAt: new Date(Date.now() - 3600000 * 24),
     author: {
       id: 3,
-      username: "Hương Lê",
+      name: "Hương Lê",
       image: "/placeholder.svg?height=40&width=40&text=HL",
       profileUrl: "/profile/3",
     },
@@ -131,10 +132,44 @@ const ONLINE_FRIENDS = [
   { id: 5, name: "Linh Đặng", image: "/placeholder.svg?height=40&width=40&text=LD", online: false },
 ]
 
+// Mock data for trending topics
+const TRENDING_TOPICS = [
+  { id: 1, name: "Công nghệ", count: "12.5K" },
+  { id: 2, name: "Du lịch", count: "8.3K" },
+  { id: 3, name: "Ẩm thực", count: "6.7K" },
+  { id: 4, name: "Thể thao", count: "5.2K" },
+]
+
+// Mock data for upcoming events
+const UPCOMING_EVENTS = [
+  {
+    id: 1,
+    name: "Hội thảo Công nghệ AI",
+    date: "15/06/2023",
+    location: "TP. Hồ Chí Minh",
+    attendees: 120,
+  },
+  {
+    id: 2,
+    name: "Workshop Nhiếp ảnh",
+    date: "22/06/2023",
+    location: "Hà Nội",
+    attendees: 45,
+  },
+]
+
+// Mock data for suggested pages
+const SUGGESTED_PAGES = [
+  { id: 1, name: "Yêu thích Du lịch", followers: "15K", image: "/placeholder.svg?height=40&width=40&text=DL" },
+  { id: 2, name: "Ẩm thực Việt Nam", followers: "12K", image: "/placeholder.svg?height=40&width=40&text=AT" },
+  { id: 3, name: "Công nghệ 4.0", followers: "8K", image: "/placeholder.svg?height=40&width=40&text=CN" },
+]
+
 export default function FeedPage() {
   const { user, isLoading } = useAuth()
   const router = useRouter()
   const [posts, setPosts] = useState<PostData[]>(POSTS)
+  const [activeTab, setActiveTab] = useState<"for-you" | "following">("for-you")
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -142,11 +177,13 @@ export default function FeedPage() {
     }
   }, [user, isLoading, router])
 
+  // Cập nhật hàm handleSubmitPost để hỗ trợ privacy
   const handleSubmitPost = async (data: {
     content: string
     images: File[]
     videos: File[]
     location?: string
+    privacy: "PUBLIC" | "FRIENDS-ONLY" | "PRIVATE"
   }) => {
     // Trong ứng dụng thực tế, bạn sẽ tải lên ảnh và video lên server
     // Ở đây chúng ta sẽ giả lập bằng cách tạo URL cho các file
@@ -165,11 +202,12 @@ export default function FeedPage() {
       images: imageUrls.length > 0 ? imageUrls : undefined,
       videos: videoUrls.length > 0 ? videoUrls : undefined,
       location: data.location,
+      privacy: data.privacy,
       createdAt: new Date(),
       author: {
-        id: user?.id ?? "user",
-        username: user?.username ?? "User",
-        image: user?.profileImage?.url ?? "/placeholder.svg",
+        id: user?.id || "user",
+        name: user?.name || "User",
+        image: user?.profileImage,
         profileUrl: "/profile",
       },
       commentsCount: 0,
@@ -211,47 +249,91 @@ export default function FeedPage() {
       <Navbar />
       <main className="container py-6">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
-          {/* Left Sidebar - Profile (Smaller) */}
+          {/* Left Sidebar - Profile & Navigation */}
           <div className="hidden md:block">
-            <Card className="card-hover sticky top-20">
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={user.profileImage?.url || "/placeholder.svg"} alt={user.username} />
+            <Card className="card-hover sticky top-20 overflow-hidden">
+              <div className="h-16 bg-gradient-to-r from-primary/30 to-primary/10"></div>
+              <CardContent className="p-4 pt-0">
+                <div className="flex flex-col items-center -mt-8 mb-4">
+                  <Avatar className="h-16 w-16 border-4 border-background">
+                    <AvatarImage src={user.profileImage || "/placeholder.svg"} alt={user.name} />
                     <AvatarFallback className="bg-primary text-primary-foreground">
-                      {user.username.charAt(0)}
+                      {user?.name ? user.name.charAt(0) : "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
-                    <h3 className="font-medium text-sm">{user.username}</h3>
-                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  <h3 className="font-medium mt-2">{user.name}</h3>
+                  <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 text-center mb-4">
+                  <div className="bg-muted/50 rounded-md p-2">
+                    <div className="font-bold">1.5K</div>
+                    <div className="text-xs text-muted-foreground">Bạn bè</div>
+                  </div>
+                  <div className="bg-muted/50 rounded-md p-2">
+                    <div className="font-bold">42</div>
+                    <div className="text-xs text-muted-foreground">Bài viết</div>
+                  </div>
+                  <div className="bg-muted/50 rounded-md p-2">
+                    <div className="font-bold">350</div>
+                    <div className="text-xs text-muted-foreground">Ảnh</div>
                   </div>
                 </div>
 
-                <div className="mt-4 space-y-3">
-                  <Link href="/profile" className="flex items-center space-x-2 text-sm hover:text-primary">
-                    <User className="h-4 w-4" />
-                    <span>Trang cá nhân</span>
+                <Separator className="my-4" />
+
+                <div className="space-y-1">
+                  <Link
+                    href="/profile"
+                    className="flex items-center space-x-2 px-2 py-1.5 rounded-md hover:bg-muted transition-colors"
+                  >
+                    <User className="h-4 w-4 text-primary" />
+                    <span className="text-sm">Trang cá nhân</span>
                   </Link>
-                  <Link href="/friends" className="flex items-center space-x-2 text-sm hover:text-primary">
-                    <Users className="h-4 w-4" />
-                    <span>Bạn bè</span>
+                  <Link
+                    href="/friends"
+                    className="flex items-center space-x-2 px-2 py-1.5 rounded-md hover:bg-muted transition-colors"
+                  >
+                    <Users className="h-4 w-4 text-primary" />
+                    <span className="text-sm">Bạn bè</span>
                   </Link>
-                  <Link href="/saved" className="flex items-center space-x-2 text-sm hover:text-primary">
-                    <Bookmark className="h-4 w-4" />
-                    <span>Đã lưu</span>
+                  <Link
+                    href="/saved"
+                    className="flex items-center space-x-2 px-2 py-1.5 rounded-md hover:bg-muted transition-colors"
+                  >
+                    <Bookmark className="h-4 w-4 text-primary" />
+                    <span className="text-sm">Đã lưu</span>
                   </Link>
-                  <Link href="/events" className="flex items-center space-x-2 text-sm hover:text-primary">
-                    <Calendar className="h-4 w-4" />
-                    <span>Sự kiện</span>
+                  <Link
+                    href="/events"
+                    className="flex items-center space-x-2 px-2 py-1.5 rounded-md hover:bg-muted transition-colors"
+                  >
+                    <Calendar className="h-4 w-4 text-primary" />
+                    <span className="text-sm">Sự kiện</span>
+                  </Link>
+                  <Link
+                    href="/memories"
+                    className="flex items-center space-x-2 px-2 py-1.5 rounded-md hover:bg-muted transition-colors"
+                  >
+                    <Cake className="h-4 w-4 text-primary" />
+                    <span className="text-sm">Kỷ niệm</span>
+                  </Link>
+                  <Link
+                    href="/explore"
+                    className="flex items-center space-x-2 px-2 py-1.5 rounded-md hover:bg-muted transition-colors"
+                  >
+                    <Compass className="h-4 w-4 text-primary" />
+                    <span className="text-sm">Khám phá</span>
                   </Link>
                 </div>
 
                 <Separator className="my-4" />
 
                 <div className="flex justify-between text-xs">
-                  <span>Bạn bè</span>
-                  <span className="font-medium">1.5K</span>
+                  <span className="text-muted-foreground">© 2023 Verlink</span>
+                  <Link href="/terms" className="text-primary hover:underline">
+                    Điều khoản
+                  </Link>
                 </div>
               </CardContent>
             </Card>
@@ -259,6 +341,32 @@ export default function FeedPage() {
 
           {/* Main Content - Feed */}
           <div className="md:col-span-2 space-y-6 animate-slide-up">
+            {/* Feed Tabs */}
+            <Card className="overflow-hidden">
+              <div className="grid grid-cols-2 border-b">
+                <Button
+                  variant="ghost"
+                  className={`rounded-none h-12 ${
+                    activeTab === "for-you" ? "border-b-2 border-primary font-medium" : ""
+                  }`}
+                  onClick={() => setActiveTab("for-you")}
+                >
+                  <Sparkles className={`h-4 w-4 mr-2 ${activeTab === "for-you" ? "text-primary" : ""}`} />
+                  Dành cho bạn
+                </Button>
+                <Button
+                  variant="ghost"
+                  className={`rounded-none h-12 ${
+                    activeTab === "following" ? "border-b-2 border-primary font-medium" : ""
+                  }`}
+                  onClick={() => setActiveTab("following")}
+                >
+                  <Users className={`h-4 w-4 mr-2 ${activeTab === "following" ? "text-primary" : ""}`} />
+                  Đang theo dõi
+                </Button>
+              </div>
+            </Card>
+
             {/* Post Form */}
             <PostForm onSubmit={handleSubmitPost} />
 
@@ -275,46 +383,99 @@ export default function FeedPage() {
             </div>
           </div>
 
-          {/* Right Sidebar - Online Friends */}
-          <div className="hidden md:block">
-            <Card className="card-hover sticky top-20">
+          {/* Right Sidebar - Widgets */}
+          <div className="hidden md:block space-y-6">
+            {/* Trending Topics */}
+            <Card className="card-hover overflow-hidden">
+              <div className="bg-gradient-to-r from-primary/20 to-primary/5 p-4 flex items-center">
+                <Newspaper className="h-5 w-5 mr-2 text-primary" />
+                <h3 className="font-medium">Xu hướng</h3>
+              </div>
               <CardContent className="p-4">
-                <h3 className="text-sm font-medium mb-3">Bạn bè đang hoạt động</h3>
+                <div className="space-y-3">
+                  {TRENDING_TOPICS.map((topic) => (
+                    <div key={topic.id} className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <span className="text-sm font-medium hover:text-primary cursor-pointer">#{topic.name}</span>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {topic.count}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Upcoming Events */}
+            <Card className="card-hover overflow-hidden">
+              <div className="bg-gradient-to-r from-primary/20 to-primary/5 p-4 flex items-center">
+                <Calendar className="h-5 w-5 mr-2 text-primary" />
+                <h3 className="font-medium">Sự kiện sắp tới</h3>
+              </div>
+              <CardContent className="p-4">
+                <div className="space-y-4">
+                  {UPCOMING_EVENTS.map((event) => (
+                    <div key={event.id} className="space-y-1">
+                      <div className="font-medium text-sm">{event.name}</div>
+                      <div className="flex items-center text-xs text-muted-foreground">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        <span>{event.date}</span>
+                      </div>
+                      <div className="flex items-center text-xs text-muted-foreground">
+                        <MapPin className="h-3 w-3 mr-1" />
+                        <span>{event.location}</span>
+                      </div>
+                      <div className="flex items-center text-xs text-muted-foreground">
+                        <Users className="h-3 w-3 mr-1" />
+                        <span>{event.attendees} người tham gia</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Online Friends */}
+            <Card className="card-hover overflow-hidden">
+              <div className="bg-gradient-to-r from-primary/20 to-primary/5 p-4 flex items-center">
+                <Users className="h-5 w-5 mr-2 text-primary" />
+                <h3 className="font-medium">Bạn bè đang hoạt động</h3>
+              </div>
+              <CardContent className="p-4">
                 <div className="space-y-1">
                   {ONLINE_FRIENDS.map((friend) => (
                     <FriendChatButton key={friend.id} friend={friend} />
                   ))}
                 </div>
+              </CardContent>
+            </Card>
 
-                <Separator className="my-4" />
-
-                <h4 className="text-xs font-medium mb-3">Nhóm trò chuyện</h4>
+            {/* Suggested Pages */}
+            <Card className="card-hover overflow-hidden">
+              <div className="bg-gradient-to-r from-primary/20 to-primary/5 p-4 flex items-center">
+                <Compass className="h-5 w-5 mr-2 text-primary" />
+                <h3 className="font-medium">Trang gợi ý</h3>
+              </div>
+              <CardContent className="p-4">
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src="/placeholder.svg?height=40&width=40&text=NT" />
-                        <AvatarFallback className="bg-primary/80 text-primary-foreground">NT</AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm">Nhóm Thân Thiết</span>
+                  {SUGGESTED_PAGES.map((page) => (
+                    <div key={page.id} className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <Avatar className="h-8 w-8 mr-2">
+                          <AvatarImage src={page.image || "/placeholder.svg"} alt={page.name} />
+                          <AvatarFallback>{page?.name ? page.name.charAt(0) : "P"}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="text-sm font-medium">{page.name}</div>
+                          <div className="text-xs text-muted-foreground">{page.followers} người theo dõi</div>
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm" className="h-8">
+                        Theo dõi
+                      </Button>
                     </div>
-                    <Badge variant="outline" className="text-xs bg-primary/10">
-                      3
-                    </Badge>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src="/placeholder.svg?height=40&width=40&text=GĐ" />
-                        <AvatarFallback className="bg-primary/80 text-primary-foreground">GĐ</AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm">Gia đình</span>
-                    </div>
-                    <Badge variant="outline" className="text-xs bg-primary/10">
-                      1
-                    </Badge>
-                  </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>

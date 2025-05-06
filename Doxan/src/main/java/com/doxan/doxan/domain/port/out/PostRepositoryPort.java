@@ -8,6 +8,7 @@ import java.util.Optional;
 public interface PostRepositoryPort {
     Optional<Post> findById(String id);
     Post save(Post post);
+    List<Post> findAllByTargetId(String targetId);
     List<Post> findAllByTargetIdWithPagination(String targetId, int offset, int limit);
     void deleteById(String id);
 }

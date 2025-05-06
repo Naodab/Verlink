@@ -144,7 +144,7 @@ export default function SettingsPage() {
                     <Avatar className="h-24 w-24 border-4 border-background">
                       <AvatarImage src={user.profileImage || "/placeholder.svg"} alt={user.name} />
                       <AvatarFallback className="text-4xl bg-primary text-primary-foreground">
-                        {user.name.charAt(0)}
+                        {user?.name ? user.name.charAt(0) : "U"}
                       </AvatarFallback>
                     </Avatar>
                     <Button

@@ -27,5 +27,6 @@ public class PostResponse {
     Map<ReactionType, Long> reactionCounts;
     boolean edited;
     int shareCount;
-    List<MediaResponse> medias;
+    List<MediaResponse> images;
+    List<MediaResponse> videos;
 }

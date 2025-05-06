@@ -2,8 +2,6 @@ package com.doxan.doxan.adapter.out.fileupload;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
-import com.doxan.doxan.domain.exception.AppException;
-import com.doxan.doxan.domain.exception.ErrorCode;
 import com.doxan.doxan.domain.file.UploadFile;
 import com.doxan.doxan.domain.model.Media;
 import com.doxan.doxan.domain.model.enums.MediaTargetType;
@@ -28,7 +26,19 @@ public class CloudinaryMediaUploader implements MediaUploader {
     @Override
     public Media upload(UploadFile uploadFile, String targetId, MediaTargetType type) {
         try {
-            Map<?, ?> result = cloudinary.uploader().upload(uploadFile.getBytes(), ObjectUtils.emptyMap());
+            String contentType = uploadFile.getMimeType();
+            String resourceType = "raw";
+
+            if (contentType != null) {
+                if (contentType.startsWith("image")) {
+                    resourceType = "image";
+                } else if (contentType.startsWith("video")) {
+                    resourceType = "video";
+                }
+            }
+
+            Map<?, ?> result = cloudinary.uploader().upload(uploadFile.getBytes(),
+                    ObjectUtils.asMap("resource_type", resourceType));
             String url = (String) result.get("secure_url");
             String mimeType = uploadFile.getMimeType();
             String fileName = uploadFile.getOriginalFilename();
@@ -42,7 +52,7 @@ public class CloudinaryMediaUploader implements MediaUploader {
                     .targetType(type)
                     .build();
         } catch (Exception e) {
-            throw new AppException(ErrorCode.UPLOADER_ERROR);
+            throw new RuntimeException(e);
         }
     }
 
@@ -54,7 +64,6 @@ public class CloudinaryMediaUploader implements MediaUploader {
             options.put("public_id", "defaults/" + fileName);
             options.put("overwrite", true);
 
-            @SuppressWarnings("unchecked")
             Map<String, Object> result = cloudinary.uploader().upload(inputStream, options);
 
             return Media.builder()
@@ -72,11 +81,19 @@ public class CloudinaryMediaUploader implements MediaUploader {
     }
 
     @Override
-    public void delete(String publicId) {
+    public void delete(String publicId, MediaType type) {
+        String resourceType = "raw";
+        if (MediaType.IMAGE.equals(type)) {
+            resourceType = "image";
+        } else if (MediaType.VIDEO.equals(type)) {
+            resourceType = "video";
+        }
+
         try {
-            cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
+            log.info(publicId);
+            cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", resourceType));
         } catch (IOException e) {
-            throw new AppException(ErrorCode.DELETE_FILE_ERROR);
+            throw new RuntimeException(e);
         }
     }
 

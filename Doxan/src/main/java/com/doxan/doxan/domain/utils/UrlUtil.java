@@ -3,8 +3,8 @@ package com.doxan.doxan.domain.utils;
 import com.doxan.doxan.domain.exception.AppException;
 import com.doxan.doxan.domain.exception.ErrorCode;
 
-public class UrlUntil {
-    private UrlUntil() {}
+public class UrlUtil {
+    private UrlUtil() {}
 
     public static String extractPublicId(String url) {
         try {

@@ -8,7 +8,7 @@ import com.doxan.doxan.domain.model.Media;
 import com.doxan.doxan.domain.port.in.MediaUseCase;
 import com.doxan.doxan.domain.port.out.MediaRepositoryPort;
 import com.doxan.doxan.domain.port.out.MediaUploader;
-import com.doxan.doxan.domain.utils.UrlUntil;
+import com.doxan.doxan.domain.utils.UrlUtil;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -34,7 +34,7 @@ public class MediaService implements MediaUseCase {
     public void deleteById(String id) {
         Media media = mediaRepository.findById(id).orElseThrow(() ->
                 new AppException(ErrorCode.MEDIA_NOT_EXISTED));
-        mediaUploader.delete(UrlUntil.extractPublicId(media.getUrl()));
+        mediaUploader.delete(UrlUtil.extractPublicId(media.getUrl()), media.getMediaType());
         mediaRepository.deleteById(id);
     }
 }

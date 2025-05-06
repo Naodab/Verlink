@@ -16,7 +16,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useState } from "react"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { NotificationDropdown } from "@/components/notifications/notification-dropdown"
 
 export function Navbar() {
@@ -151,15 +150,14 @@ export function Navbar() {
           {/* Thay thế nút thông báo bằng NotificationDropdown */}
           <NotificationDropdown />
 
-          <ThemeToggle />
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.profileImage?.url || "/placeholder.svg"} alt={user.username} />
+                    <AvatarImage src={user.profileImage || "/placeholder.svg"} alt={user.name} />
                     <AvatarFallback className="bg-primary text-primary-foreground">
-                      {user.username.charAt(0)}
+                      {user?.name ? user.name.charAt(0) : "U"}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
