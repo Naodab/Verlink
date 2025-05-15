@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button"
 import { MediaPreview } from "./media-preview"
 import type { MediaFile } from "@/components/post-card"
 
+// Cập nhật interface MediaGridProps để làm rõ rằng images và videos là mảng URL
+
 interface MediaGridProps {
-  images: string[] | MediaFile[]
-  videos?: string[] | MediaFile[]
-  docs?: MediaFile[]
+  images: string[] // URLs của ảnh
+  videos: string[] // URLs của video
+  docs?: MediaFile[] // Thông tin đầy đủ của tài liệu
   editable?: boolean
   onRemove?: (type: "image" | "video" | "doc", index: number) => void
   videoFirst?: boolean

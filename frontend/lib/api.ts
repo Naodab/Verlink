@@ -62,13 +62,13 @@ export async function fetchApi<T = any>(
     // Kiểm tra response status
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || `API request failed with status ${response.status}`)
+      throw new Error(errorData.message ?? `API request failed with status ${response.status}`)
     }
 
     // Kiểm tra nếu response là rỗng
     const contentType = response.headers.get("content-type")
     if (contentType?.includes("application/json")) {
-      return await response.json()
+      return (await response.json()).data as unknown as T
     }
 
     return (await response.text()) as unknown as T

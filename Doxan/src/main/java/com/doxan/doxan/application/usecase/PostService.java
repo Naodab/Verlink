@@ -2,6 +2,7 @@ package com.doxan.doxan.application.usecase;
 
 import com.doxan.doxan.domain.dto.mapper.MediaDTOMapper;
 import com.doxan.doxan.domain.dto.mapper.PostDTOMapper;
+import com.doxan.doxan.domain.dto.request.post.PostCreateRequest;
 import com.doxan.doxan.domain.dto.request.post.PostUpdateRequest;
 import com.doxan.doxan.domain.dto.response.media.MediaResponse;
 import com.doxan.doxan.domain.dto.response.post.PostResponse;
@@ -58,30 +59,36 @@ public class PostService implements PostUseCase {
 
     @Override
     @Transactional
-    public PostResponse create(String content, List<UploadFile> images, List<UploadFile> videos) {
+    public PostResponse create(PostCreateRequest request) {
         User user = userRepository.findById(SecurityContextHolder.getContext().getAuthentication().getName())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         Post post = Post.builder()
-                .content(content)
+                .content(request.getContent())
                 .user(user)
-                .targetId(user.getId())
+                .targetId(request.getTargetId())
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
-                .visibility(Visibility.PUBLIC)
+                .visibility(request.getVisibility())
                 .build();
         post = postRepository.save(post);
         String finalPostId = post.getId();
-        PostResponse postResponse = postDTOMapper.fromPost(post);
-        if (!images.isEmpty()) {
-            postResponse.setImages(images.stream()
+        PostResponse postResponse = postDTOMapper.toResponse(post);
+        if (!request.getImages().isEmpty()) {
+            postResponse.setImages(request.getImages().stream()
                     .map(image -> mediaDTOMapper.toResponse(mediaRepository.save(
                             mediaUploader.upload(image, finalPostId, MediaTargetType.POST))
                     )).toList());
         }
-        if (!videos.isEmpty()) {
-            postResponse.setImages(videos.stream()
+        if (!request.getVideos().isEmpty()) {
+            postResponse.setVideos(request.getVideos().stream()
                     .map(video -> mediaDTOMapper.toResponse(mediaRepository.save(
                             mediaUploader.upload(video, finalPostId, MediaTargetType.POST))
+                    )).toList());
+        }
+        if (!request.getDocs().isEmpty()) {
+            postResponse.setDocs(request.getDocs().stream()
+                    .map(doc -> mediaDTOMapper.toResponse(mediaRepository.save(
+                            mediaUploader.upload(doc, finalPostId, MediaTargetType.POST))
                     )).toList());
         }
         return postResponse;
@@ -117,7 +124,7 @@ public class PostService implements PostUseCase {
         }
 
         postRepository.save(post);
-        PostResponse postResponse = postDTOMapper.fromPost(post);
+        PostResponse postResponse = postDTOMapper.toResponse(post);
         postResponse.setImages(finalMedia.stream()
                 .map(mediaDTOMapper::toResponse).toList());
         return postResponse;
@@ -141,27 +148,31 @@ public class PostService implements PostUseCase {
     @Override
     public List<PostResponse> getOfUserIds(String userId) {
         List<Post> posts = postRepository.findAllByTargetId(userId);
-        List<PostResponse> postResponses = posts.stream().map(postDTOMapper::fromPost).toList();
+        List<PostResponse> postResponses = posts.stream().map(postDTOMapper::toResponse).toList();
         postResponses.forEach(post -> {
             List<Media> medias = mediaRepository.findAllByTargetId(post.getId());
             List<MediaResponse> images = new ArrayList<>();
             List<MediaResponse> videos = new ArrayList<>();
+            List<MediaResponse> docs = new ArrayList<>();
             medias.forEach(media -> {
                 if (MediaType.IMAGE.equals(media.getMediaType())) {
                     images.add(mediaDTOMapper.toResponse(media));
                 } else if (MediaType.VIDEO.equals(media.getMediaType())) {
                     videos.add(mediaDTOMapper.toResponse(media));
+                } else if (MediaType.DOCUMENT.equals(media.getMediaType())) {
+                    docs.add(mediaDTOMapper.toResponse(media));
                 }
             });
             post.setImages(images);
             post.setVideos(videos);
+            post.setDocs(docs);
         });
         return postResponses;
     }
 
     @Override
     public PostResponse getById(String id) {
-        PostResponse result = postDTOMapper.fromPost(postRepository.findById(id)
+        PostResponse result = postDTOMapper.toResponse(postRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_EXISTED)));
         result.setImages(mediaRepository.findAllByTargetId(id).stream()
                 .map(mediaDTOMapper::toResponse).toList());
@@ -171,7 +182,7 @@ public class PostService implements PostUseCase {
     @Override
     public List<PostResponse> getAllFromTargetIdWithPage(String targetId, int offset, int limit) {
         return postRepository.findAllByTargetIdWithPagination(targetId, offset, limit)
-                .stream().map(postDTOMapper::fromPost).toList();
+                .stream().map(postDTOMapper::toResponse).toList();
     }
 
     @Override

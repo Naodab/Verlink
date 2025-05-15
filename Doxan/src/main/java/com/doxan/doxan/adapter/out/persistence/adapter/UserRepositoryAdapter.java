@@ -191,50 +191,51 @@ public class UserRepositoryAdapter implements UserRepositoryPort {
     @Override
     @Retry(name = "redisCalls")
     public boolean existsByPhone(String phone) {
-        if (!cacheEnabled) {
-            return jpaUserRepository.existsByPhone(phone);
-        }
-
-        phoneLock.readLock().lock();
-        try {
-            Boolean exists = redisTemplate.execute(
-                    checkAndAddScript,
-                    Collections.singletonList(PHONE_SET),
-                    phone
-            );
-
-            if (Boolean.TRUE.equals(exists)) {
-                return true;
-            }
-
-            phoneLock.readLock().unlock();
-            phoneLock.writeLock().lock();
-            try {
-                exists = redisTemplate.opsForSet().isMember(PHONE_SET, phone);
-                if (Boolean.TRUE.equals(exists)) {
-                    return true;
-                }
-
-                boolean dbExists = jpaUserRepository.existsByPhone(phone);
-                if (dbExists) {
-                    try {
-                        redisTemplate.opsForSet().add(PHONE_SET, phone);
-                    } catch (Exception e) {
-                        log.warn("Cannot update phone cache for {}", phone, e);
-                    }
-                }
-                return dbExists;
-            } finally {
-                // Hạ cấp lại thành read lock
-                phoneLock.readLock().lock();
-                phoneLock.writeLock().unlock();
-            }
-        } catch (Exception e) {
-            log.warn("Redis error when checking phone existence, falling back to DB", e);
-            return jpaUserRepository.existsByPhone(phone);
-        } finally {
-            phoneLock.readLock().unlock();
-        }
+//        if (!cacheEnabled) {
+//            return jpaUserRepository.existsByPhone(phone);
+//        }
+//
+//        phoneLock.readLock().lock();
+//        try {
+//            Boolean exists = redisTemplate.execute(
+//                    checkAndAddScript,
+//                    Collections.singletonList(PHONE_SET),
+//                    phone
+//            );
+//
+//            if (Boolean.TRUE.equals(exists)) {
+//                return true;
+//            }
+//
+//            phoneLock.readLock().unlock();
+//            phoneLock.writeLock().lock();
+//            try {
+//                exists = redisTemplate.opsForSet().isMember(PHONE_SET, phone);
+//                if (Boolean.TRUE.equals(exists)) {
+//                    return true;
+//                }
+//
+//                boolean dbExists = jpaUserRepository.existsByPhone(phone);
+//                if (dbExists) {
+//                    try {
+//                        redisTemplate.opsForSet().add(PHONE_SET, phone);
+//                    } catch (Exception e) {
+//                        log.warn("Cannot update phone cache for {}", phone, e);
+//                    }
+//                }
+//                return dbExists;
+//            } finally {
+//                // Hạ cấp lại thành read lock
+//                phoneLock.readLock().lock();
+//                phoneLock.writeLock().unlock();
+//            }
+//        } catch (Exception e) {
+//            log.warn("Redis error when checking phone existence, falling back to DB", e);
+//            return jpaUserRepository.existsByPhone(phone);
+//        } finally {
+//            phoneLock.readLock().unlock();
+//        }
+        return jpaUserRepository.existsByPhone(phone);
     }
 
     @Override

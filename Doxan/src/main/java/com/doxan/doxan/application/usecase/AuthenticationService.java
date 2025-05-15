@@ -24,6 +24,7 @@ import com.nimbusds.jwt.SignedJWT;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.text.ParseException;
@@ -74,6 +75,7 @@ public class AuthenticationService implements AuthenticationUseCase {
     }
 
     @Override
+    @Transactional
     public LoginResponse authenticate(final LoginRequest request) {
         User user = userRepository.findByEmail(request.getUsername())
                 .or(() -> userRepository.findByPhone(request.getUsername()))
@@ -82,14 +84,19 @@ public class AuthenticationService implements AuthenticationUseCase {
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword()))
             throw new AppException(ErrorCode.UNAUTHENTICATED);
 
-        log.info(user.getProfileImage().getUrl());
-        UserResponse response = userDTOMapper.toResponse(user);
-        log.info(response.getProfileImage().getUrl());
-
         return LoginResponse.builder()
                 .user(userDTOMapper.toResponse(user))
                 .token(generateToken(user))
                 .build();
+    }
+
+    @Override
+    public UserResponse authenticate(IntrospectRequest request) throws ParseException, JOSEException {
+        SignedJWT signedJWT = verifyToken(request.getToken(), false);
+        String userId = signedJWT.getJWTClaimsSet().getSubject();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        return userDTOMapper.toResponse(user);
     }
 
     @Override

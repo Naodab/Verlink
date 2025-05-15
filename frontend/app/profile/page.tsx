@@ -16,6 +16,7 @@ import { PostCard, type PostData } from "@/components/post-card"
 import { PostForm } from "@/components/post/post-form"
 import type { CommentData } from "@/components/comments/comment-item"
 import { MediaPreview } from "@/components/post/media-preview"
+import { fetchApi } from "@/lib/api"
 
 // Define types for Visibility and Post
 type Visibility = "PUBLIC" | "FRIENDS" | "PRIVATE"
@@ -114,50 +115,7 @@ const MOCK_COMMENTS: CommentData[] = [
 ]
 
 // Mock data for profile posts
-const PROFILE_POSTS: PostData[] = [
-  {
-    id: 101,
-    content: "Vừa hoàn thành khóa học lập trình web mới! Cảm thấy rất hào hứng với những kiến thức đã học được.",
-    createdAt: new Date(Date.now() - 3600000 * 24),
-    author: {
-      id: "1",
-      name: "John Doe",
-      image: "/placeholder.svg",
-    },
-    commentsCount: 5,
-    sharesCount: 1,
-    comments: MOCK_COMMENTS,
-  },
-  {
-    id: 102,
-    content: "Cuối tuần vừa rồi đi du lịch Đà Lạt, thời tiết mát mẻ và phong cảnh tuyệt đẹp!",
-    images: [
-      "/placeholder.svg?height=300&width=600&text=Đà+Lạt+1",
-      "/placeholder.svg?height=300&width=600&text=Đà+Lạt+2",
-    ],
-    location: "Đà Lạt, Lâm Đồng",
-    createdAt: new Date(Date.now() - 3600000 * 72),
-    author: {
-      id: "1",
-      name: "John Doe",
-      image: "/placeholder.svg",
-    },
-    commentsCount: 12,
-    sharesCount: 3,
-  },
-  {
-    id: 103,
-    content: "Hôm nay là một ngày tuyệt vời! #SocialMedia",
-    createdAt: new Date(Date.now() - 3600000 * 120),
-    author: {
-      id: "1",
-      name: "John Doe",
-      image: "/placeholder.svg",
-    },
-    commentsCount: 3,
-    sharesCount: 0,
-  },
-]
+const PROFILE_POSTS: PostData[] = []
 
 export default function ProfilePage() {
   const { user, isLoading } = useAuth()
@@ -175,9 +133,23 @@ export default function ProfilePage() {
     if (!isLoading && !user) {
       router.push("/login")
     } else if (user) {
-      setProfileImage(user.profileImage || null)
+      setProfileImage(user.profileImage?.url || null)
     }
   }, [user, isLoading, router])
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      const postResponse = await fetchApi<PostData[]>("/posts/my-posts", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("verlink-token")}`,
+        },
+      })
+      setPosts(postResponse)
+    }
+
+    fetchPosts()
+  }, [])
 
   // Xử lý khi người dùng thay đổi ảnh bìa
   const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -213,7 +185,7 @@ export default function ProfilePage() {
     }
   }
 
-  // Cập nhật hàm handleSubmitPost để hỗ trợ docs
+  // Cập nhật hàm handleSubmitPost để chỉ sử dụng visibility
   const handleSubmitPost = async (data: {
     content: string
     images: File[]
@@ -222,71 +194,26 @@ export default function ProfilePage() {
     location?: string
     visibility: Visibility
   }) => {
-    // Trong ứng dụng thực tế, bạn sẽ tải lên ảnh, video và tài liệu lên server
-    // Ở đây chúng ta sẽ giả lập bằng cách tạo URL cho các file
-    const imageUrls = data.images.map((file, index) => ({
-      id: `img-${Date.now()}-${index}`,
-      url: `/placeholder.svg?height=400&width=600&text=Uploaded+Image+${index + 1}`,
-      name: file.name,
-      type: file.type,
-      size: file.size,
-    }))
-
-    const videoUrls = data.videos.map((file, index) => ({
-      id: `vid-${Date.now()}-${index}`,
-      url: `/placeholder.svg?height=400&width=600&text=Uploaded+Video+${index + 1}`,
-      name: file.name,
-      type: file.type,
-      size: file.size,
-    }))
-
-    const docUrls = data.docs.map((file, index) => ({
-      id: `doc-${Date.now()}-${index}`,
-      url: `/placeholder.svg?height=400&width=600&text=Uploaded+PDF+${index + 1}`,
-      name: file.name,
-      type: file.type,
-      size: file.size,
-    }))
-
-    // Tạo bài đăng mới
-    const newPost: Post = {
-      id: `post-${Date.now()}`,
-      content: data.content,
-      images: imageUrls.length > 0 ? imageUrls : undefined,
-      videos: videoUrls.length > 0 ? videoUrls : undefined,
-      docs: docUrls.length > 0 ? docUrls : undefined,
-      visibility: data.visibility,
-      createdAt: new Date(),
-      user: {
-        id: user?.id || "user",
-        username: user?.username || "user",
-        firstName: user?.firstName || "User",
-        lastName: user?.lastName || "",
-        email: user?.email || "user@example.com",
-        gender: "OTHER",
-        createdAt: new Date(),
-        profileImage: user?.profileImage || {
-          id: "default",
-          url: "/placeholder.svg",
+    try {
+      const formData = new FormData()
+      formData.append("content", data.content)
+      data.images.forEach((image, i) => formData.append(`images[${i}]`, image))
+      data.videos.forEach((video, i) => formData.append(`videos[${i}]`, video))
+      data.docs.forEach((doc, i) => formData.append(`docs[${i}]`, doc))
+      formData.append("targetId", user?.id ?? "")
+      formData.append("visibility", data.visibility)
+      if (data.location) formData.append("location", data.location || "")
+      const response = await fetchApi<PostData>("/posts", {
+        method: "POST",
+        body: formData,
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("verlink-token")}`,
         },
-      },
-      reactionCounts: {
-        like: 0,
-        love: 0,
-        haha: 0,
-        wow: 0,
-        sad: 0,
-        angry: 0,
-      },
-      isEdited: false,
-      shareCount: 0,
+      })
+      setPosts((prevPosts) => [response, ...prevPosts])
+    } catch (error) {
+      console.error("Error submitting post:", error)
     }
-
-    // Thêm bài đăng mới vào đầu danh sách
-    setPosts([newPost, ...posts])
-
-    // Giả lập thời gian xử lý
-    await new Promise((resolve) => setTimeout(resolve, 1000))
   }
 
   const handleCommentClick = (postId: string | number) => {
@@ -360,9 +287,9 @@ export default function ProfilePage() {
           <div className="absolute -top-16 left-4 md:left-8 group">
             <div className="relative cursor-pointer" onClick={handleViewProfileImage}>
               <Avatar className="h-32 w-32 border-4 border-background glow-effect">
-                <AvatarImage src={profileImage || user.profileImage || "/placeholder.svg"} alt={user?.name || "User"} />
+                <AvatarImage src={profileImage || user.profileImage?.url || "/placeholder.svg"} alt={user?.username || "User"} />
                 <AvatarFallback className="text-4xl bg-primary text-primary-foreground">
-                  {user?.name ? user.name.charAt(0) : "U"}
+                  {user?.username ? user.username.charAt(0) : "U"}
                 </AvatarFallback>
               </Avatar>
 
@@ -401,7 +328,7 @@ export default function ProfilePage() {
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold gradient-text">{user?.name || "User"}</h1>
+                <h1 className="text-2xl font-bold gradient-text">{user?.username || "User"}</h1>
                 <p className="text-muted-foreground">{user?.email || "user@example.com"}</p>
                 <div className="flex items-center mt-4 space-x-6">
                   <div className="flex flex-col items-center">
@@ -463,8 +390,8 @@ export default function ProfilePage() {
                   ...post,
                   author: {
                     ...post.author,
-                    name: user?.name || "User",
-                    image: profileImage || user.profileImage || "/placeholder.svg",
+                    name: user?.username || "User",
+                    image: profileImage ?? user.profileImage?.url ?? "/placeholder.svg",
                   },
                 }}
                 onCommentClick={handleCommentClick}
@@ -523,8 +450,8 @@ export default function ProfilePage() {
           isOpen={isPreviewOpen}
           onClose={() => setIsPreviewOpen(false)}
           author={{
-            name: user?.name || "User",
-            image: profileImage || user.profileImage,
+            name: user?.username || "User",
+            image: profileImage || user.profileImage?.url,
           }}
           content={previewType === "cover" ? "Ảnh bìa" : "Ảnh đại diện"}
         />

@@ -43,8 +43,7 @@ export interface PostData {
   videos?: string[] | MediaFile[]
   docs?: MediaFile[]
   location?: string
-  privacy?: "PUBLIC" | "FRIENDS-ONLY" | "PRIVATE"
-  visibility?: "PUBLIC" | "FRIENDS" | "PRIVATE"
+  visibility: "PUBLIC" | "FRIENDS" | "PRIVATE"
   createdAt: string | Date
   author: PostAuthor
   commentsCount?: number
@@ -68,10 +67,8 @@ interface PostCardProps {
 }
 
 // Thêm hàm để lấy icon và label cho quyền riêng tư
-const getPrivacyIcon = (privacy?: string, visibility?: string) => {
-  const value = visibility || privacy
-  switch (value) {
-    case "FRIENDS-ONLY":
+const getPrivacyIcon = (visibility: string) => {
+  switch (visibility) {
     case "FRIENDS":
       return <Users className="h-3 w-3" />
     case "PRIVATE":
@@ -82,10 +79,8 @@ const getPrivacyIcon = (privacy?: string, visibility?: string) => {
   }
 }
 
-const getPrivacyLabel = (privacy?: string, visibility?: string) => {
-  const value = visibility || privacy
-  switch (value) {
-    case "FRIENDS-ONLY":
+const getPrivacyLabel = (visibility: string) => {
+  switch (visibility) {
     case "FRIENDS":
       return "Chỉ bạn bè"
     case "PRIVATE":
@@ -104,7 +99,7 @@ const isMediaFile = (media: any): media is MediaFile => {
 export function PostCard({ post, onCommentClick, onShareClick }: PostCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [showComments, setShowComments] = useState(false)
-  const maxLength = 280 // Độ dài tối đa của nội dung hiển thị ban đầu
+  const maxLength = 280
 
   const formattedDate =
     typeof post.createdAt === "string"
@@ -129,6 +124,8 @@ export function PostCard({ post, onCommentClick, onShareClick }: PostCardProps) 
     if (onCommentClick) onCommentClick(post.id)
   }
 
+  // Cập nhật hàm prepareImages và prepareVideos để xử lý đúng URL
+
   // Chuẩn bị dữ liệu media cho MediaGrid
   const prepareImages = () => {
     if (!post.images) return []
@@ -136,7 +133,7 @@ export function PostCard({ post, onCommentClick, onShareClick }: PostCardProps) 
       if (isMediaFile(img)) {
         return img.url
       }
-      return img
+      return img // Đã là URL string
     })
   }
 
@@ -146,7 +143,7 @@ export function PostCard({ post, onCommentClick, onShareClick }: PostCardProps) 
       if (isMediaFile(vid)) {
         return vid.url
       }
-      return vid
+      return vid // Đã là URL string
     })
   }
 
@@ -177,8 +174,8 @@ export function PostCard({ post, onCommentClick, onShareClick }: PostCardProps) 
               )}
               <span className="mx-1">•</span>
               <span className="flex items-center">
-                {getPrivacyIcon(post.privacy, post.visibility)}
-                <span className="ml-1">{getPrivacyLabel(post.privacy, post.visibility)}</span>
+                {getPrivacyIcon(post.visibility)}
+                <span className="ml-1">{getPrivacyLabel(post.visibility)}</span>
               </span>
               {post.isEdited && (
                 <>

@@ -1,16 +1,18 @@
 package com.doxan.doxan.adapter.in.web.controller;
 
+import com.doxan.doxan.domain.dto.request.auth.IntrospectRequest;
 import com.doxan.doxan.domain.dto.request.auth.LoginRequest;
 import com.doxan.doxan.domain.dto.request.auth.LogoutRequest;
 import com.doxan.doxan.domain.dto.request.auth.RefreshRequest;
 import com.doxan.doxan.domain.dto.response.ApiResponse;
 import com.doxan.doxan.domain.dto.response.auth.LoginResponse;
 import com.doxan.doxan.domain.dto.response.auth.TokenResponse;
+import com.doxan.doxan.domain.dto.response.user.UserResponse;
 import com.doxan.doxan.domain.port.in.AuthenticationUseCase;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.nimbusds.jose.JOSEException;
+import org.springframework.web.bind.annotation.*;
+
+import java.text.ParseException;
 
 @RestController
 @RequestMapping("/auth")
@@ -24,6 +26,13 @@ public class AuthenticationController {
     @PostMapping("/login")
     public ApiResponse<LoginResponse> login(@RequestBody LoginRequest request) {
         return ApiResponse.<LoginResponse>builder()
+                .data(authenticationUseCase.authenticate(request))
+                .build();
+    }
+
+    @PostMapping("/me")
+    public ApiResponse<UserResponse> authenticate(@RequestBody IntrospectRequest request) throws ParseException, JOSEException {
+        return ApiResponse.<UserResponse>builder()
                 .data(authenticationUseCase.authenticate(request))
                 .build();
     }

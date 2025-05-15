@@ -19,7 +19,7 @@ import java.util.Map;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PostResponse {
     String id;
-    UserResponse user;
+    UserResponse author;
     String content;
     Visibility visibility;
     LocalDateTime createdAt;
@@ -29,4 +29,5 @@ public class PostResponse {
     int shareCount;
     List<MediaResponse> images;
     List<MediaResponse> videos;
+    List<MediaResponse> docs;
 }

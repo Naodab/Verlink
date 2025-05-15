@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/components/auth-provider"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Loader2 } from "lucide-react"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -72,9 +74,9 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit}>
               <CardContent className="space-y-4">
                 {error && (
-                  <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md animate-pulse-slow">
-                    {error}
-                  </div>
+                  <Alert variant="destructive" className="animate-pulse-slow">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
                 )}
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
@@ -113,7 +115,7 @@ export default function LoginPage() {
                 >
                   {isLoading ? (
                     <>
-                      <div className="h-4 w-4 mr-2 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin"></div>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Đang đăng nhập...
                     </>
                   ) : (

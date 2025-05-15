@@ -1,5 +1,6 @@
 package com.doxan.doxan.adapter.out.persistence.adapter;
 
+import com.doxan.doxan.adapter.out.persistence.entity.JpaFriendshipEntity;
 import com.doxan.doxan.adapter.out.persistence.mapper.FriendshipMapper;
 import com.doxan.doxan.adapter.out.persistence.repository.JpaFriendshipRepository;
 import com.doxan.doxan.domain.model.Friendship;
@@ -79,5 +80,18 @@ public class FriendshipRepositoryAdapter implements FriendshipRepositoryPort {
     @Override
     public long countNumberOfCommonFriends(String userA, String userB) {
         return jpaFriendshipRepository.countMutualFriends(userA, userB);
+    }
+
+    @Override
+    public boolean existsById(String requesterId, String accepterId) {
+        return jpaFriendshipRepository.existsById(JpaFriendshipEntity.FriendshipId.builder()
+                        .requesterId(requesterId)
+                        .accepterId(accepterId)
+                        .build())
+                ||
+                jpaFriendshipRepository.existsById(JpaFriendshipEntity.FriendshipId.builder()
+                        .requesterId(accepterId)
+                        .accepterId(requesterId)
+                        .build());
     }
 }

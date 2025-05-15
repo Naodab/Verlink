@@ -74,6 +74,7 @@ const POSTS: PostData[] = [
     commentsCount: 15,
     sharesCount: 3,
     comments: MOCK_COMMENTS,
+    visibility: "PUBLIC",
   },
   {
     id: 2,
@@ -89,6 +90,7 @@ const POSTS: PostData[] = [
     },
     commentsCount: 8,
     sharesCount: 2,
+    visibility: "FRIENDS",
   },
   {
     id: 3,
@@ -102,6 +104,7 @@ const POSTS: PostData[] = [
     },
     commentsCount: 23,
     sharesCount: 0,
+    visibility: "PUBLIC",
   },
   {
     id: 4,
@@ -120,6 +123,7 @@ const POSTS: PostData[] = [
     },
     commentsCount: 12,
     sharesCount: 5,
+    visibility: "PRIVATE",
   },
 ]
 
@@ -177,13 +181,14 @@ export default function FeedPage() {
     }
   }, [user, isLoading, router])
 
-  // Cập nhật hàm handleSubmitPost để hỗ trợ privacy
+  // Cập nhật hàm handleSubmitPost để chỉ sử dụng visibility
   const handleSubmitPost = async (data: {
     content: string
     images: File[]
     videos: File[]
+    docs: File[]
     location?: string
-    privacy: "PUBLIC" | "FRIENDS-ONLY" | "PRIVATE"
+    visibility: "PUBLIC" | "FRIENDS" | "PRIVATE"
   }) => {
     // Trong ứng dụng thực tế, bạn sẽ tải lên ảnh và video lên server
     // Ở đây chúng ta sẽ giả lập bằng cách tạo URL cho các file
@@ -202,12 +207,12 @@ export default function FeedPage() {
       images: imageUrls.length > 0 ? imageUrls : undefined,
       videos: videoUrls.length > 0 ? videoUrls : undefined,
       location: data.location,
-      privacy: data.privacy,
+      visibility: data.visibility,
       createdAt: new Date(),
       author: {
-        id: user?.id || "user",
-        name: user?.name || "User",
-        image: user?.profileImage,
+        id: user?.id ?? "user",
+        name: user?.username ?? "User",
+        image: user?.profileImage?.url,
         profileUrl: "/profile",
       },
       commentsCount: 0,
@@ -256,12 +261,12 @@ export default function FeedPage() {
               <CardContent className="p-4 pt-0">
                 <div className="flex flex-col items-center -mt-8 mb-4">
                   <Avatar className="h-16 w-16 border-4 border-background">
-                    <AvatarImage src={user.profileImage || "/placeholder.svg"} alt={user.name} />
+                    <AvatarImage src={user.profileImage?.url || "/placeholder.svg"} alt={user.username} />
                     <AvatarFallback className="bg-primary text-primary-foreground">
-                      {user?.name ? user.name.charAt(0) : "U"}
+                      {user?.username ? user.username.charAt(0) : "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <h3 className="font-medium mt-2">{user.name}</h3>
+                  <h3 className="font-medium mt-2">{user.username}</h3>
                   <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                 </div>
 

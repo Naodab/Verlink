@@ -19,4 +19,5 @@ public class Notification {
     private String targetId;
     private boolean read;
     private LocalDateTime createdAt;
+    private String url;
 }

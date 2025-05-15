@@ -16,6 +16,7 @@ public enum ErrorCode {
     USER_NOT_EXISTED(1032, "User not existed", StatusCode.BAD_REQUEST),
 
     FRIENDSHIP_NOT_EXISTED(1041, "Friendship not existed", StatusCode.BAD_REQUEST),
+    FRIENDSHIP_EXISTED(1042, "Friendship existed", StatusCode.BAD_REQUEST),
 
     POST_NOT_EXISTED(1051, "Post not existed", StatusCode.BAD_REQUEST),
     POST_EDITING_NOT_PERMITTED(1052, "User don't have permission to edit this post", StatusCode.BAD_REQUEST),

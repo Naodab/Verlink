@@ -1,5 +1,6 @@
 package com.doxan.doxan.domain.port.in;
 
+import com.doxan.doxan.domain.dto.request.post.PostCreateRequest;
 import com.doxan.doxan.domain.dto.request.post.PostUpdateRequest;
 import com.doxan.doxan.domain.dto.response.post.PostResponse;
 import com.doxan.doxan.domain.file.UploadFile;
@@ -7,7 +8,7 @@ import com.doxan.doxan.domain.file.UploadFile;
 import java.util.List;
 
 public interface PostUseCase {
-    PostResponse create(String content, List<UploadFile> images, List<UploadFile> videos);
+    PostResponse create(PostCreateRequest request);
     PostResponse update(String id, PostUpdateRequest request, List<UploadFile> files);
     void deleteById(String id);
     List<PostResponse> getMyPosts();

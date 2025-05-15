@@ -18,6 +18,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { createPost, validateFile, optimizeImage, type UploadProgress } from "@/lib/api"
+import { useToast } from "@/hooks/use-toast"
+// Import component UploadProgress
+import { UploadProgress as UploadProgressComponent } from "@/components/ui/upload-progress"
 
 interface PostFormProps {
   onSubmit: (data: {
@@ -32,6 +36,7 @@ interface PostFormProps {
 
 export function PostForm({ onSubmit }: PostFormProps) {
   const { user } = useAuth()
+  const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedImages, setSelectedImages] = useState<File[]>([])
   const [selectedVideos, setSelectedVideos] = useState<File[]>([])
@@ -45,6 +50,8 @@ export function PostForm({ onSubmit }: PostFormProps) {
   const [visibility, setVisibility] = useState<"PUBLIC" | "FRIENDS" | "PRIVATE">("PUBLIC")
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [previewPost, setPreviewPost] = useState<any>(null)
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress[]>([])
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   const imageInputRef = useRef<HTMLInputElement>(null)
   const videoInputRef = useRef<HTMLInputElement>(null)
@@ -59,13 +66,42 @@ export function PostForm({ onSubmit }: PostFormProps) {
   const content = watch("content")
 
   // Xử lý khi người dùng chọn ảnh
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const newImages = Array.from(e.target.files)
-      setSelectedImages([...selectedImages, ...newImages])
+
+      // Validate files
+      for (const file of newImages) {
+        const validation = validateFile(file, {
+          maxSize: 10 * 1024 * 1024, // 10MB
+          allowedTypes: ["image/"],
+        })
+
+        if (!validation.valid) {
+          toast({
+            title: "Lỗi tải lên",
+            description: validation.error,
+            variant: "destructive",
+          })
+          return
+        }
+      }
+
+      // Optimize images
+      const optimizedImages = await Promise.all(
+        newImages.map((file) =>
+          optimizeImage(file, {
+            maxWidth: 1920,
+            maxHeight: 1080,
+            quality: 0.8,
+          }),
+        ),
+      )
+
+      setSelectedImages([...selectedImages, ...optimizedImages])
 
       // Tạo URL preview cho ảnh
-      const newImageUrls = newImages.map((file) => URL.createObjectURL(file))
+      const newImageUrls = optimizedImages.map((file) => URL.createObjectURL(file))
       setImagePreviewUrls([...imagePreviewUrls, ...newImageUrls])
     }
   }
@@ -74,6 +110,24 @@ export function PostForm({ onSubmit }: PostFormProps) {
   const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const newVideos = Array.from(e.target.files)
+
+      // Validate files
+      for (const file of newVideos) {
+        const validation = validateFile(file, {
+          maxSize: 100 * 1024 * 1024, // 100MB
+          allowedTypes: ["video/"],
+        })
+
+        if (!validation.valid) {
+          toast({
+            title: "Lỗi tải lên",
+            description: validation.error,
+            variant: "destructive",
+          })
+          return
+        }
+      }
+
       setSelectedVideos([...selectedVideos, ...newVideos])
 
       // Tạo URL preview cho video
@@ -86,6 +140,24 @@ export function PostForm({ onSubmit }: PostFormProps) {
   const handleDocChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const newDocs = Array.from(e.target.files).filter((file) => file.type === "application/pdf")
+
+      // Validate files
+      for (const file of newDocs) {
+        const validation = validateFile(file, {
+          maxSize: 20 * 1024 * 1024, // 20MB
+          allowedTypes: ["application/pdf"],
+        })
+
+        if (!validation.valid) {
+          toast({
+            title: "Lỗi tải lên",
+            description: validation.error,
+            variant: "destructive",
+          })
+          return
+        }
+      }
+
       setSelectedDocs([...selectedDocs, ...newDocs])
     }
   }
@@ -181,6 +253,8 @@ export function PostForm({ onSubmit }: PostFormProps) {
     setIsPreviewOpen(true)
   }
 
+  // Thay đổi hàm handleFormSubmit để xử lý đúng việc gửi ảnh và nhận URL
+
   // Xử lý khi người dùng đăng bài
   const handleFormSubmit = async (data: { content: string }) => {
     if (
@@ -193,15 +267,28 @@ export function PostForm({ onSubmit }: PostFormProps) {
     }
 
     setIsSubmitting(true)
+    setUploadError(null)
 
     try {
-      await onSubmit({
-        content: data.content,
-        images: selectedImages,
-        videos: selectedVideos,
-        docs: selectedDocs,
-        location: location || undefined,
-        visibility,
+      // Sử dụng API mới để tạo bài đăng
+      const response = await createPost(
+        {
+          content: data.content,
+          images: selectedImages,
+          videos: selectedVideos,
+          docs: selectedDocs,
+          location: location || undefined,
+          visibility,
+        },
+        (progresses) => {
+          setUploadProgress(progresses)
+        },
+      )
+
+      // Thông báo thành công
+      toast({
+        title: "Đăng bài thành công",
+        description: "Bài viết của bạn đã được đăng thành công.",
       })
 
       // Reset form sau khi đăng thành công
@@ -213,12 +300,20 @@ export function PostForm({ onSubmit }: PostFormProps) {
       setVideoPreviewUrls([])
       setLocation("")
       setVisibility("PUBLIC")
+      setUploadProgress([])
 
       // Giải phóng URL objects để tránh memory leak
       imagePreviewUrls.forEach((url) => URL.revokeObjectURL(url))
       videoPreviewUrls.forEach((url) => URL.revokeObjectURL(url))
     } catch (error) {
       console.error("Error submitting post:", error)
+      setUploadError((error as Error).message || "Đã xảy ra lỗi khi đăng bài. Vui lòng thử lại sau.")
+
+      toast({
+        title: "Lỗi đăng bài",
+        description: "Đã xảy ra lỗi khi đăng bài. Vui lòng thử lại sau.",
+        variant: "destructive",
+      })
     } finally {
       setIsSubmitting(false)
     }
@@ -235,6 +330,11 @@ export function PostForm({ onSubmit }: PostFormProps) {
   const isFormValid =
     content.trim() || selectedImages.length > 0 || selectedVideos.length > 0 || selectedDocs.length > 0
 
+  // Tính toán tổng tiến trình upload
+  const totalProgress = uploadProgress.length
+    ? uploadProgress.reduce((sum, item) => sum + item.progress, 0) / uploadProgress.length
+    : 0
+
   return (
     <Card className="card-hover">
       <form onSubmit={handleSubmit(handleFormSubmit)}>
@@ -243,7 +343,7 @@ export function PostForm({ onSubmit }: PostFormProps) {
             <Avatar className="h-10 w-10">
               <AvatarImage src={user?.profileImage || "/placeholder.svg"} alt={user?.name || "User"} />
               <AvatarFallback className="bg-primary text-primary-foreground">
-                {user?.name?.charAt(0) || "U"}
+                {user?.name ? user.name.charAt(0) : "U"}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
@@ -288,6 +388,17 @@ export function PostForm({ onSubmit }: PostFormProps) {
                   />
                 </div>
               )}
+
+              {/* Hiển thị tiến trình upload */}
+              {isSubmitting && uploadProgress.length > 0 && (
+                <UploadProgressComponent
+                  progresses={uploadProgress}
+                  error={uploadError}
+                  onRetry={() => handleFormSubmit({ content })}
+                />
+              )}
+
+              {/* Xóa phần hiển thị lỗi upload cũ vì đã được tích hợp vào UploadProgress */}
             </div>
           </div>
         </CardContent>
@@ -303,6 +414,7 @@ export function PostForm({ onSubmit }: PostFormProps) {
                       size="icon"
                       className="h-9 w-9 rounded-full"
                       onClick={() => imageInputRef.current?.click()}
+                      disabled={isSubmitting}
                     >
                       <ImageIcon className="h-5 w-5 text-primary" />
                     </Button>
@@ -318,6 +430,7 @@ export function PostForm({ onSubmit }: PostFormProps) {
                       size="icon"
                       className="h-9 w-9 rounded-full"
                       onClick={() => videoInputRef.current?.click()}
+                      disabled={isSubmitting}
                     >
                       <Video className="h-5 w-5 text-primary" />
                     </Button>
@@ -333,6 +446,7 @@ export function PostForm({ onSubmit }: PostFormProps) {
                       size="icon"
                       className="h-9 w-9 rounded-full"
                       onClick={() => docInputRef.current?.click()}
+                      disabled={isSubmitting}
                     >
                       <FileText className="h-5 w-5 text-primary" />
                     </Button>
@@ -344,7 +458,13 @@ export function PostForm({ onSubmit }: PostFormProps) {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <DialogTrigger asChild>
-                        <Button type="button" variant="ghost" size="icon" className="h-9 w-9 rounded-full">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 rounded-full"
+                          disabled={isSubmitting}
+                        >
                           <MapPin className="h-5 w-5 text-primary" />
                         </Button>
                       </DialogTrigger>
@@ -390,7 +510,7 @@ export function PostForm({ onSubmit }: PostFormProps) {
             </div>
 
             <div className="flex items-center space-x-2">
-              <Select value={visibility} onValueChange={(value: any) => setVisibility(value)}>
+              <Select value={visibility} onValueChange={(value: any) => setVisibility(value)} disabled={isSubmitting}>
                 <SelectTrigger className="h-8 w-[130px]">
                   <SelectValue placeholder="Quyền riêng tư" />
                 </SelectTrigger>
@@ -463,7 +583,7 @@ export function PostForm({ onSubmit }: PostFormProps) {
                     <Avatar className="h-10 w-10 mr-4">
                       <AvatarImage src={user?.profileImage || "/placeholder.svg"} alt={user?.name || "User"} />
                       <AvatarFallback className="bg-primary text-primary-foreground">
-                        {user?.name?.charAt(0) || "U"}
+                        {user?.name ? user.name.charAt(0) : "U"}
                       </AvatarFallback>
                     </Avatar>
                     <div>

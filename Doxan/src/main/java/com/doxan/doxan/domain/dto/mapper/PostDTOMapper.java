@@ -6,9 +6,8 @@ import com.doxan.doxan.domain.model.Post;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring", uses = MediaDTOMapper.class)
+@Mapper(componentModel = "spring", uses = {MediaDTOMapper.class, UserDTOMapper.class})
 public interface PostDTOMapper {
-
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "user", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
@@ -20,5 +19,7 @@ public interface PostDTOMapper {
 
     @Mapping(target = "images", ignore = true)
     @Mapping(target = "videos", ignore = true)
-    PostResponse fromPost(Post post);
+    @Mapping(target = "author", source = "user")
+    @Mapping(target = "docs", ignore = true)
+    PostResponse toResponse(Post post);
 }

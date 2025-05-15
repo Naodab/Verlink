@@ -4,8 +4,7 @@ import type React from "react"
 import type { Gender } from "@/types/user"
 
 import { createContext, useContext, useEffect, useState } from "react"
-import apiUrl from "@/lib/auth"
-import { useRouter } from "next/router"
+import { fetchApi } from "@/lib/api"
 
 type User = {
   id: string
@@ -47,61 +46,50 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const router = useRouter()
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      const token = localStorage.getItem("verlink-token")
-      if (token) {
-        try {
-          setIsLoading(true)
-          const response = await fetch(`${apiUrl}/auth/me`, {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          const responseJson = await response.json()
-          if (!responseJson.ok) {
-            throw new Error("Failed to fetch user data")
-          }
-          const { data } = responseJson
-          setUser(data.user)
-        } catch (error) {
-          console.error("Invalid token", error)
-          localStorage.removeItem("verlink-token")
-          setUser(null)
-          router.push("/login")
-        }
-      }
+    // Check if user is logged in
+    const token = localStorage.getItem("verlink-token")
+    if (token) {
+      // Verify the token with backend
+      fetchCurrentUser(token)
+    } else {
       setIsLoading(false)
     }
-
-    fetchUserData()
   }, [])
+
+  // Fetch current user data
+  const fetchCurrentUser = async (token: string) => {
+    try {
+      const userData = await fetchApi<User>("/auth/me", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({"token": localStorage.getItem("verlink-token")}),
+      })
+      setUser(userData)
+    } catch (error) {
+      console.error("Failed to fetch user data:", error)
+      localStorage.removeItem("verlink-token")
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true)
-      const response = await fetch(`${apiUrl}/auth/login`, {
+
+      const response = await fetchApi<{ user: User; token: string }>("/auth/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({ username: email, password }),
       })
-      const responseJson = await response.json()
-      if (!response.ok) {
-        throw new Error(responseJson.message ?? "Login failed")
-      }
-      const { data } = responseJson
-      localStorage.setItem("verlink-token", data.token)
-      setUser(data.user)
-      setIsLoading(false)
+      localStorage.setItem("verlink-token", response.token)
+      setUser(response.user)
       return true
     } catch (error) {
-      console.error("Login failed", error)
+      console.error("Login failed:", error)
       return false
     } finally {
       setIsLoading(false)
@@ -111,24 +99,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (data: RegisterData) => {
     try {
       setIsLoading(true)
-      const response = await fetch(`${apiUrl}/users`, {
+
+      const response = await fetchApi<{ user: User; token: string }>("/api/auth/register", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify(data),
       })
-      const responseJson = await response.json()
-      if (!response.ok) {
-        throw new Error(responseJson.message ?? "Registration failed")
-      }
-      const { data: mockResponse } = responseJson
 
-      localStorage.setItem("verlink-token", mockResponse.token)
-      setUser(mockResponse.user)
+      localStorage.setItem("verlink-token", response.token)
+      setUser(response.user)
       return true
     } catch (error) {
-      console.error("Registration failed", error)
+      console.error("Registration failed:", error)
       return false
     } finally {
       setIsLoading(false)
@@ -138,21 +119,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateProfileImage = async (imageUrl: string) => {
     try {
       setIsLoading(true)
-      // In a real app, you would make an API call to your backend
-      // Mock successful update
-      if (user) {
-        const updatedUser = {
-          ...user,
-          profileImage: {
-            id: "custom",
-            url: imageUrl,
-          },
-        }
-        setUser(updatedUser)
-      }
+
+      if (!user) return false
+
+      const updatedUser = await fetchApi<User>("/api/users/profile-image", {
+        method: "PUT",
+        body: JSON.stringify({ imageUrl }),
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("verlink-token")}`,
+        },
+      })
+
+      setUser(updatedUser)
       return true
     } catch (error) {
-      console.error("Profile image update failed", error)
+      console.error("Profile image update failed:", error)
       return false
     } finally {
       setIsLoading(false)

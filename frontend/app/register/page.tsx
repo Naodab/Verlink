@@ -11,12 +11,14 @@ import { Label } from "@/components/ui/label"
 import { useAuth } from "@/components/auth-provider"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { Gender } from "@/types/user"
+import { fetchApi } from "@/lib/api"
 
 export default function RegisterPage() {
   const [firstName, setFirstName] = useState("")
@@ -31,6 +33,10 @@ export default function RegisterPage() {
   const [error, setError] = useState("")
   const [usernameOptions, setUsernameOptions] = useState<string[]>([])
   const [step, setStep] = useState(1)
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false)
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false)
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null)
+  const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null)
   const { register, isLoading } = useAuth()
   const router = useRouter()
 
@@ -50,6 +56,50 @@ export default function RegisterPage() {
     }
   }, [firstName, lastName])
 
+  // Kiểm tra username có sẵn không
+  useEffect(() => {
+    const checkUsername = async () => {
+      if (username && username.length >= 3) {
+        setIsCheckingUsername(true)
+        setUsernameAvailable(null)
+
+        try {
+          const response = await fetchApi<{ available: boolean }>(`/api/auth/check-username?username=${username}`)
+          setUsernameAvailable(response.available)
+        } catch (error) {
+          console.error("Error checking username:", error)
+        } finally {
+          setIsCheckingUsername(false)
+        }
+      }
+    }
+
+    const timer = setTimeout(checkUsername, 500)
+    return () => clearTimeout(timer)
+  }, [username])
+
+  // Kiểm tra email có sẵn không
+  useEffect(() => {
+    const checkEmail = async () => {
+      if (email && /\S+@\S+\.\S+/.test(email)) {
+        setIsCheckingEmail(true)
+        setEmailAvailable(null)
+
+        try {
+          const response = await fetchApi<{ available: boolean }>(`/api/auth/check-email?email=${email}`)
+          setEmailAvailable(response.available)
+        } catch (error) {
+          console.error("Error checking email:", error)
+        } finally {
+          setIsCheckingEmail(false)
+        }
+      }
+    }
+
+    const timer = setTimeout(checkEmail, 500)
+    return () => clearTimeout(timer)
+  }, [email])
+
   const validateStep1 = () => {
     if (!firstName) {
       setError("Vui lòng nhập tên của bạn")
@@ -63,12 +113,20 @@ export default function RegisterPage() {
       setError("Vui lòng chọn tên người dùng")
       return false
     }
+    if (usernameAvailable === false) {
+      setError("Tên người dùng đã tồn tại, vui lòng chọn tên khác")
+      return false
+    }
     if (!email) {
       setError("Vui lòng nhập email của bạn")
       return false
     }
     if (!/\S+@\S+\.\S+/.test(email)) {
       setError("Email không hợp lệ")
+      return false
+    }
+    if (emailAvailable === false) {
+      setError("Email đã tồn tại, vui lòng sử dụng email khác")
       return false
     }
     if (!phone) {
@@ -179,9 +237,9 @@ export default function RegisterPage() {
             <form onSubmit={handleSubmit}>
               <CardContent className="space-y-4">
                 {error && (
-                  <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md animate-pulse-slow">
-                    {error}
-                  </div>
+                  <Alert variant="destructive" className="animate-pulse-slow">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
                 )}
 
                 {step === 1 ? (
@@ -212,7 +270,20 @@ export default function RegisterPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="username">Tên người dùng</Label>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="username">Tên người dùng</Label>
+                        {isCheckingUsername && (
+                          <span className="text-xs text-muted-foreground flex items-center">
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                            Đang kiểm tra...
+                          </span>
+                        )}
+                        {!isCheckingUsername && usernameAvailable !== null && (
+                          <span className={`text-xs ${usernameAvailable ? "text-green-500" : "text-red-500"}`}>
+                            {usernameAvailable ? "Có thể sử dụng" : "Đã tồn tại"}
+                          </span>
+                        )}
+                      </div>
                       <Select value={username} onValueChange={setUsername}>
                         <SelectTrigger className="bg-background/50 border-border/50 focus-visible:ring-primary">
                           <SelectValue placeholder="Chọn tên người dùng" />
@@ -228,7 +299,20 @@ export default function RegisterPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="email">Email</Label>
+                        {isCheckingEmail && (
+                          <span className="text-xs text-muted-foreground flex items-center">
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                            Đang kiểm tra...
+                          </span>
+                        )}
+                        {!isCheckingEmail && emailAvailable !== null && (
+                          <span className={`text-xs ${emailAvailable ? "text-green-500" : "text-red-500"}`}>
+                            {emailAvailable ? "Có thể sử dụng" : "Đã tồn tại"}
+                          </span>
+                        )}
+                      </div>
                       <Input
                         id="email"
                         placeholder="email@example.com"
@@ -342,7 +426,7 @@ export default function RegisterPage() {
                     >
                       {isLoading ? (
                         <>
-                          <div className="h-4 w-4 mr-2 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin"></div>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                           Đang tạo tài khoản...
                         </>
                       ) : (

@@ -11,15 +11,21 @@ import com.doxan.doxan.domain.dto.response.user.UserResponse;
 import com.doxan.doxan.domain.exception.AppException;
 import com.doxan.doxan.domain.exception.ErrorCode;
 import com.doxan.doxan.domain.model.Friendship;
+import com.doxan.doxan.domain.model.Notification;
+import com.doxan.doxan.domain.model.User;
 import com.doxan.doxan.domain.model.enums.FriendshipStatus;
+import com.doxan.doxan.domain.model.enums.NotificationType;
 import com.doxan.doxan.domain.port.in.FriendshipUseCase;
 import com.doxan.doxan.domain.port.out.FriendshipRepositoryPort;
+import com.doxan.doxan.domain.port.out.NotificationRepositoryPort;
+import com.doxan.doxan.domain.port.out.NotificationSender;
 import com.doxan.doxan.domain.port.out.UserRepositoryPort;
+import com.doxan.doxan.domain.predefined.UrlPredefined;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class FriendshipService implements FriendshipUseCase {
@@ -27,15 +33,21 @@ public class FriendshipService implements FriendshipUseCase {
     private final UserRepositoryPort userRepository;
     private final UserDTOMapper userDTOMapper;
     private final FriendshipDTOMapper friendshipDTOMapper;
+    private final NotificationRepositoryPort notificationRepository;
+    private final NotificationSender notificationSender;
 
     FriendshipService(final FriendshipRepositoryPort friendshipRepository,
                       final UserRepositoryPort userRepository,
-                      UserDTOMapper userDTOMapper,
-                      FriendshipDTOMapper friendshipDTOMapper) {
+                      final UserDTOMapper userDTOMapper,
+                      final FriendshipDTOMapper friendshipDTOMapper,
+                      final NotificationRepositoryPort notificationRepository,
+                      final NotificationSender notificationSender) {
         this.friendshipRepository = friendshipRepository;
         this.userRepository = userRepository;
         this.userDTOMapper = userDTOMapper;
         this.friendshipDTOMapper = friendshipDTOMapper;
+        this.notificationRepository = notificationRepository;
+        this.notificationSender = notificationSender;
     }
 
     @Override
@@ -46,7 +58,7 @@ public class FriendshipService implements FriendshipUseCase {
             if (userId.equals(friendship.getAccepter().getId()))
                 return friendship.getAccepter();
             return friendship.getRequester();
-        }).toList().stream().map(userDTOMapper::toResponse).collect(Collectors.toList());
+        }).toList().stream().map(userDTOMapper::toResponse).toList();
     }
 
     @Override
@@ -54,7 +66,7 @@ public class FriendshipService implements FriendshipUseCase {
         List<Friendship> friends = friendshipRepository
                 .findAllByAccepterIdAndStatus(userId, FriendshipStatus.PENDING);
         return friends.stream().map(Friendship::getRequester).toList().stream()
-                .map(userDTOMapper::toResponse).collect(Collectors.toList());
+                .map(userDTOMapper::toResponse).toList();
     }
 
     @Override
@@ -62,7 +74,7 @@ public class FriendshipService implements FriendshipUseCase {
         List<Friendship> friends = friendshipRepository
                 .findAllByRequesterIdAndStatus(userId, FriendshipStatus.PENDING);
         return friends.stream().map(Friendship::getRequester).toList()
-                .stream().map(userDTOMapper::toResponse).collect(Collectors.toList());
+                .stream().map(userDTOMapper::toResponse).toList();
     }
 
     @Override
@@ -71,7 +83,7 @@ public class FriendshipService implements FriendshipUseCase {
                         request.getUserBId(), request.getOffset(), request.getLimit())
                 .stream().map(id -> userRepository.findById(id).orElseThrow(() ->
                         new AppException(ErrorCode.USER_NOT_EXISTED))).toList()
-                .stream().map(userDTOMapper::toResponse).collect(Collectors.toList());
+                .stream().map(userDTOMapper::toResponse).toList();
     }
 
     @Override
@@ -98,15 +110,38 @@ public class FriendshipService implements FriendshipUseCase {
     }
 
     @Override
+    @Transactional
     public FriendshipResponse create(FriendshipRequest request) {
-        return friendshipDTOMapper.toResponse(friendshipRepository.save(Friendship.builder()
-                .requester(userRepository.findById(request.getRequesterId())
-                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)))
-                .accepter(userRepository.findById(request.getRequestedId())
-                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)))
-                .status(FriendshipStatus.PENDING)
-                .createdAt(LocalDateTime.now())
-                .build()));
+        if (friendshipRepository.existsById(request.getRequesterId(), request.getRequestedId()))
+            throw new AppException(ErrorCode.FRIENDSHIP_EXISTED);
+
+        User requester = userRepository.findById(request.getRequesterId())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        User requested = userRepository.findById(request.getRequestedId())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        Friendship friendship = friendshipRepository.save(Friendship.builder()
+                        .requester(requester)
+                        .accepter(requested)
+                        .createdAt(LocalDateTime.now())
+                        .status(FriendshipStatus.PENDING)
+                        .build());
+
+        Notification notification = notificationRepository.save(
+                Notification.builder()
+                        .content(requester.getUsername() + " đã gửi lời mời kết bạn cho bạn.")
+                        .senderId(requester.getId())
+                        .createdAt(LocalDateTime.now())
+                        .url(UrlPredefined.URL_FRIEND_REQUESTER)
+                        .targetId(requested.getId())
+                        .type(NotificationType.FRIEND_REQUEST)
+                        .recipient(requested)
+                        .build()
+        );
+
+        notificationSender.sendFriendRequestNotification(notification);
+        return friendshipDTOMapper.toResponse(friendship);
     }
 
     @Override
@@ -131,6 +166,6 @@ public class FriendshipService implements FriendshipUseCase {
                     if (userId.equals(friendship.getAccepter().getId()))
                         return friendship.getAccepter();
                     return friendship.getRequester();
-                }).toList().stream().map(userDTOMapper::toResponse).collect(Collectors.toList());
+                }).toList().stream().map(userDTOMapper::toResponse).toList();
     }
 }
