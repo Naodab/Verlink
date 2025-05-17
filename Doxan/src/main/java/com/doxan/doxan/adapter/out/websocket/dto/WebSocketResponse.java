@@ -9,6 +9,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AuthSocketResponse {
-    boolean success;
+public class WebSocketResponse<T> {
+    String type;
+    T data;
 }

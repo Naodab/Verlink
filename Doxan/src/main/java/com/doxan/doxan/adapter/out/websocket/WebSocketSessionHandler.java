@@ -1,6 +1,8 @@
 package com.doxan.doxan.adapter.out.websocket;
 
 import com.doxan.doxan.adapter.out.websocket.dto.AuthSocketResponse;
+import com.doxan.doxan.adapter.out.websocket.dto.WebSocketResponse;
+import com.doxan.doxan.adapter.out.websocket.dto.WebSocketResponseType;
 import com.doxan.doxan.domain.dto.request.auth.IntrospectRequest;
 import com.doxan.doxan.domain.dto.response.user.UserResponse;
 import com.doxan.doxan.domain.exception.AppException;
@@ -54,15 +56,20 @@ public class WebSocketSessionHandler extends TextWebSocketHandler {
                     activityState = ActivityState.TURN_OFF;
                 session.getAttributes().put(USER_ACTIVITY_STATE, activityState);
                 session.sendMessage(new TextMessage(objectMapper
-                        .writeValueAsString(AuthSocketResponse.builder()
-                                .success(true)
+                        .writeValueAsString(WebSocketResponse.<AuthSocketResponse>builder()
+                                .data(AuthSocketResponse.builder()
+                                        .success(true)
+                                        .build())
                                 .build())));
                 log.info("Connected to user {}", user.getId());
                 log.info("Number of connection: {}", WebSocketSessionManager.getCurrentSessions());
             } catch (AppException e) {
                 session.sendMessage(new TextMessage(objectMapper
-                        .writeValueAsString(AuthSocketResponse.builder()
-                                .success(false)
+                        .writeValueAsString(WebSocketResponse.<AuthSocketResponse>builder()
+                                .type(WebSocketResponseType.AUTH.toString())
+                                .data(AuthSocketResponse.builder()
+                                        .success(false)
+                                        .build())
                                 .build())));
             }
         }
