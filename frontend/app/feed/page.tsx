@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/components/auth-provider"
 import { Navbar } from "@/components/navbar"
@@ -9,14 +9,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { User, Users, Bookmark, Calendar, Cake, MapPin, Sparkles, Newspaper, Compass } from "lucide-react"
+import { User, Users, Bookmark, Calendar, Cake, MapPin, Sparkles, Newspaper, Compass, Loader2 } from "lucide-react"
 import { PostCard, type PostData } from "@/components/post-card"
 import { FriendChatButton } from "@/components/friends/friend-chat-button"
 import { PostForm } from "@/components/post/post-form"
 import type { CommentData } from "@/components/comments/comment-item"
 import { Button } from "@/components/ui/button"
 
-// Mock comments data
 const MOCK_COMMENTS: CommentData[] = [
   {
     id: "comment-1",
@@ -24,7 +23,7 @@ const MOCK_COMMENTS: CommentData[] = [
     createdAt: new Date(Date.now() - 3600000),
     author: {
       id: 1,
-      name: "Anna Nguyễn",
+      username: "Anna Nguyễn",
       image: "/placeholder.svg?height=40&width=40&text=AN",
     },
     likes: 5,
@@ -36,7 +35,7 @@ const MOCK_COMMENTS: CommentData[] = [
     createdAt: new Date(Date.now() - 7200000),
     author: {
       id: 3,
-      name: "Hương Lê",
+      username: "Hương Lê",
       image: "/placeholder.svg?height=40&width=40&text=HL",
     },
     likes: 2,
@@ -48,7 +47,7 @@ const MOCK_COMMENTS: CommentData[] = [
         createdAt: new Date(Date.now() - 3600000),
         author: {
           id: 2,
-          name: "Minh Trần",
+          username: "Minh Trần",
           image: "/placeholder.svg?height=40&width=40&text=MT",
         },
         likes: 1,
@@ -58,8 +57,7 @@ const MOCK_COMMENTS: CommentData[] = [
   },
 ]
 
-// Mock data for posts
-const POSTS: PostData[] = [
+const INITIAL_POSTS: PostData[] = [
   {
     id: 1,
     content:
@@ -67,7 +65,7 @@ const POSTS: PostData[] = [
     createdAt: new Date(Date.now() - 3600000 * 2),
     author: {
       id: 2,
-      name: "Minh Trần",
+      username: "Minh Trần",
       image: "/placeholder.svg?height=40&width=40&text=MT",
       profileUrl: "/profile/2",
     },
@@ -84,7 +82,7 @@ const POSTS: PostData[] = [
     createdAt: new Date(Date.now() - 3600000 * 5),
     author: {
       id: 1,
-      name: "Anna Nguyễn",
+      username: "Anna Nguyễn",
       image: "/placeholder.svg?height=40&width=40&text=AN",
       profileUrl: "/profile/1",
     },
@@ -98,7 +96,7 @@ const POSTS: PostData[] = [
     createdAt: new Date(Date.now() - 3600000 * 10),
     author: {
       id: 4,
-      name: "Tuấn Phạm",
+      username: "Tuấn Phạm",
       image: "/placeholder.svg?height=40&width=40&text=TP",
       profileUrl: "/profile/4",
     },
@@ -117,7 +115,7 @@ const POSTS: PostData[] = [
     createdAt: new Date(Date.now() - 3600000 * 24),
     author: {
       id: 3,
-      name: "Hương Lê",
+      username: "Hương Lê",
       image: "/placeholder.svg?height=40&width=40&text=HL",
       profileUrl: "/profile/3",
     },
@@ -127,13 +125,42 @@ const POSTS: PostData[] = [
   },
 ]
 
+// Tạo thêm bài viết giả lập cho việc tải thêm
+const generateMorePosts = (page: number): PostData[] => {
+  return Array(4)
+    .fill(0)
+    .map((_, index) => ({
+      id: 100 + page * 10 + index,
+      content: `Đây là bài viết được tải thêm ở trang ${page}, số thứ tự ${index + 1}. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.`,
+      createdAt: new Date(Date.now() - 3600000 * (24 + page * 24 + index)),
+      author: {
+        id: (index % 4) + 1,
+        username: ["Anna Nguyễn", "Minh Trần", "Hương Lê", "Tuấn Phạm"][index % 4],
+        image: `/placeholder.svg?height=40&width=40&text=${["AN", "MT", "HL", "TP"][index % 4]}`,
+        profileUrl: `/profile/${(index % 4) + 1}`,
+      },
+      commentsCount: Math.floor(Math.random() * 20),
+      sharesCount: Math.floor(Math.random() * 10),
+      visibility: ["PUBLIC", "FRIENDS", "PRIVATE"][Math.floor(Math.random() * 3)] as "PUBLIC" | "FRIENDS" | "PRIVATE",
+      ...(Math.random() > 0.5 && {
+        images: [
+          `/placeholder.svg?height=400&width=600&text=Image+${page}-${index + 1}`,
+          ...(Math.random() > 0.7 ? [`/placeholder.svg?height=400&width=600&text=Image+${page}-${index + 2}`] : []),
+        ],
+      }),
+      ...(Math.random() > 0.7 && {
+        location: ["Hà Nội", "TP. Hồ Chí Minh", "Đà Nẵng", "Huế"][Math.floor(Math.random() * 4)],
+      }),
+    }))
+}
+
 // Mock data for online friends
 const ONLINE_FRIENDS = [
-  { id: 1, name: "Anna Nguyễn", image: "/placeholder.svg?height=40&width=40&text=AN", online: true },
-  { id: 2, name: "Minh Trần", image: "/placeholder.svg?height=40&width=40&text=MT", online: true },
-  { id: 3, name: "Hương Lê", image: "/placeholder.svg?height=40&width=40&text=HL", online: false },
-  { id: 4, name: "Tuấn Phạm", image: "/placeholder.svg?height=40&width=40&text=TP", online: true },
-  { id: 5, name: "Linh Đặng", image: "/placeholder.svg?height=40&width=40&text=LD", online: false },
+  { id: 1, username: "Anna Nguyễn", image: "/placeholder.svg?height=40&width=40&text=AN", online: true },
+  { id: 2, username: "Minh Trần", image: "/placeholder.svg?height=40&width=40&text=MT", online: true },
+  { id: 3, username: "Hương Lê", image: "/placeholder.svg?height=40&width=40&text=HL", online: false },
+  { id: 4, username: "Tuấn Phạm", image: "/placeholder.svg?height=40&width=40&text=TP", online: true },
+  { id: 5, username: "Linh Đặng", image: "/placeholder.svg?height=40&width=40&text=LD", online: false },
 ]
 
 // Mock data for trending topics
@@ -169,15 +196,38 @@ const SUGGESTED_PAGES = [
   { id: 3, name: "Công nghệ 4.0", followers: "8K", image: "/placeholder.svg?height=40&width=40&text=CN" },
 ]
 
+// Hàm giả lập API để lấy thêm bài viết
+const fetchMorePosts = async (page: number, limit = 4): Promise<PostData[]> => {
+  // Giả lập thời gian tải
+  await new Promise((resolve) => setTimeout(resolve, 1500))
+
+  try {
+    // Trong môi trường thực tế, bạn sẽ gọi API thực sự
+    // return await fetchApi<PostData[]>(`/api/posts?page=${page}&limit=${limit}`)
+
+    // Giả lập dữ liệu cho môi trường phát triển
+    return generateMorePosts(page)
+  } catch (error) {
+    console.error("Error fetching more posts:", error)
+    return []
+  }
+}
+
 export default function FeedPage() {
   const { user, isLoading } = useAuth()
   const router = useRouter()
-  const [posts, setPosts] = useState<PostData[]>(POSTS)
+  const [posts, setPosts] = useState<PostData[]>(INITIAL_POSTS)
   const [activeTab, setActiveTab] = useState<"for-you" | "following">("for-you")
+  const [page, setPage] = useState(1)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
+  const loadMoreRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      router.push("/login")
+    if (!isLoading) {
+      if (!user) {
+        router.push("/login")
+      }
     }
   }, [user, isLoading, router])
 
@@ -210,8 +260,8 @@ export default function FeedPage() {
       visibility: data.visibility,
       createdAt: new Date(),
       author: {
-        id: user?.id ?? "user",
-        name: user?.username ?? "User",
+        id: user?.id || "user",
+        username: user?.username || "User",
         image: user?.profileImage?.url,
         profileUrl: "/profile",
       },
@@ -233,6 +283,51 @@ export default function FeedPage() {
   const handleShareClick = (postId: string | number) => {
     console.log(`Share clicked for post ${postId}`)
   }
+
+  // Hàm tải thêm bài viết
+  const loadMorePosts = useCallback(async () => {
+    if (isLoadingMore || !hasMore) return
+
+    setIsLoadingMore(true)
+    try {
+      const newPosts = await fetchMorePosts(page)
+
+      if (newPosts.length === 0) {
+        setHasMore(false)
+      } else {
+        setPosts((prevPosts) => [...prevPosts, ...newPosts])
+        setPage((prevPage) => prevPage + 1)
+      }
+    } catch (error) {
+      console.error("Error loading more posts:", error)
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }, [page, isLoadingMore, hasMore])
+
+  // Thiết lập Intersection Observer để phát hiện khi người dùng cuộn đến nút "Load thêm"
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries
+        if (entry.isIntersecting && !isLoadingMore && hasMore) {
+          loadMorePosts()
+        }
+      },
+      { threshold: 1.0 },
+    )
+
+    const currentRef = loadMoreRef.current
+    if (currentRef) {
+      observer.observe(currentRef)
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef)
+      }
+    }
+  }, [loadMorePosts, isLoadingMore, hasMore])
 
   if (isLoading) {
     return (
@@ -385,6 +480,22 @@ export default function FeedPage() {
                   onShareClick={handleShareClick}
                 />
               ))}
+
+              {/* Load More Button */}
+              <div ref={loadMoreRef} className="flex justify-center py-4">
+                {isLoadingMore ? (
+                  <Button disabled className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Đang tải...
+                  </Button>
+                ) : hasMore ? (
+                  <Button variant="outline" onClick={loadMorePosts} className="px-8">
+                    Xem thêm bài viết
+                  </Button>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Bạn đã xem hết bài viết</p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -441,21 +552,6 @@ export default function FeedPage() {
               </CardContent>
             </Card>
 
-            {/* Online Friends */}
-            <Card className="card-hover overflow-hidden">
-              <div className="bg-gradient-to-r from-primary/20 to-primary/5 p-4 flex items-center">
-                <Users className="h-5 w-5 mr-2 text-primary" />
-                <h3 className="font-medium">Bạn bè đang hoạt động</h3>
-              </div>
-              <CardContent className="p-4">
-                <div className="space-y-1">
-                  {ONLINE_FRIENDS.map((friend) => (
-                    <FriendChatButton key={friend.id} friend={friend} />
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Suggested Pages */}
             <Card className="card-hover overflow-hidden">
               <div className="bg-gradient-to-r from-primary/20 to-primary/5 p-4 flex items-center">
@@ -480,6 +576,21 @@ export default function FeedPage() {
                         Theo dõi
                       </Button>
                     </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Online Friends - Di chuyển xuống dưới cùng */}
+            <Card className="card-hover overflow-hidden">
+              <div className="bg-gradient-to-r from-primary/20 to-primary/5 p-4 flex items-center">
+                <Users className="h-5 w-5 mr-2 text-primary" />
+                <h3 className="font-medium">Bạn bè đang hoạt động</h3>
+              </div>
+              <CardContent className="p-4">
+                <div className="space-y-1">
+                  {ONLINE_FRIENDS.map((friend) => (
+                    <FriendChatButton key={friend.id} friend={friend} />
                   ))}
                 </div>
               </CardContent>

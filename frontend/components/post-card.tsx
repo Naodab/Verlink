@@ -21,7 +21,7 @@ import { SavePostButton } from "./post/save-post-button"
 
 export interface PostAuthor {
   id: string | number
-  name: string
+  username: string
   image?: string
   profileUrl?: string
 }
@@ -99,7 +99,7 @@ const isMediaFile = (media: any): media is MediaFile => {
 export function PostCard({ post, onCommentClick, onShareClick }: PostCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [showComments, setShowComments] = useState(false)
-  const maxLength = 280
+  const maxLength = 280 // Độ dài tối đa của nội dung hiển thị ban đầu
 
   const formattedDate =
     typeof post.createdAt === "string"
@@ -156,13 +156,13 @@ export function PostCard({ post, onCommentClick, onShareClick }: PostCardProps) 
       <CardHeader className="flex flex-row items-center space-y-0 pb-2">
         <Link href={post.author.profileUrl || `/profile/${post.author.id}`} className="flex items-center flex-1">
           <Avatar className="h-10 w-10 mr-4">
-            <AvatarImage src={post.author.image || "/placeholder.svg"} alt={post.author.name} />
+            <AvatarImage src={post.author.image || "/placeholder.svg"} alt={post.author.username} />
             <AvatarFallback className="bg-primary/80 text-primary-foreground">
-              {post.author.name.charAt(0)}
+              {post.author.username.charAt(0)}
             </AvatarFallback>
           </Avatar>
           <div>
-            <div className="font-semibold">{post.author.name}</div>
+            <div className="font-semibold">{post.author.username}</div>
             {/* Hiển thị quyền riêng tư và thông tin khác */}
             <div className="flex items-center text-xs text-muted-foreground">
               <span>{formattedDate}</span>

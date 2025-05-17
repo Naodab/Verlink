@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -29,11 +29,17 @@ export default function LoginPage() {
       return
     }
 
-    const success = await login(email, password)
-    if (success) {
-      router.push("/feed")
-    } else {
-      setError("Đăng nhập không thành công. Vui lòng kiểm tra lại email và mật khẩu.")
+    try {
+      const success = await login(email, password)
+      if (success) {
+        
+        router.push("/feed")
+      } else {
+        setError("Đăng nhập không thành công. Vui lòng kiểm tra lại email và mật khẩu.")
+      }
+    } catch (error) {
+      console.error("Login error:", error)
+      setError(`Đăng nhập không thành công: ${error instanceof Error ? error.message : "Lỗi không xác định"}`)
     }
   }
 
@@ -61,7 +67,7 @@ export default function LoginPage() {
             ))}
           </div>
 
-          <Card className="w-full max-w-md glass-effect">
+          <Card className="w-full max-w-md glass-effect bg-black/70">
             <CardHeader className="space-y-1">
               <div className="flex justify-center mb-4">
                 <Link href="/" className="flex items-center space-x-2">
@@ -92,7 +98,7 @@ export default function LoginPage() {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="password">Mật khẩu</Label>
+                    <Label htmlFor="password" className="text-white">Mật khẩu</Label>
                     <Link href="/forgot-password" className="text-xs text-primary hover:underline underline-offset-4">
                       Quên mật khẩu?
                     </Link>
@@ -122,7 +128,7 @@ export default function LoginPage() {
                     "Đăng nhập"
                   )}
                 </Button>
-                <div className="text-center text-sm">
+                <div className="text-center text-sm text-white">
                   Chưa có tài khoản?{" "}
                   <Link href="/register" className="text-primary underline-offset-4 hover:underline">
                     Đăng ký

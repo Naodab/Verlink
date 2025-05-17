@@ -23,9 +23,7 @@ const defaultConfig: ApiConfig = {
   timeout: 30000, // 30 giây
 }
 
-/**
- * Hàm fetch API cơ bản với xử lý lỗi và timeout
- */
+// Cập nhật hàm fetchApi
 export async function fetchApi<T = any>(
   endpoint: string,
   options: RequestInit = {},
@@ -43,12 +41,26 @@ export async function fetchApi<T = any>(
   }, timeout)
 
   try {
+    // Kiểm tra baseUrl
+    if (!baseUrl) {
+      throw new Error("API base URL is not configured")
+    }
+
     // Merge headers
     const mergedHeaders = {
       ...defaultConfig.headers,
       ...headers,
       ...options.headers,
     }
+
+    // Thêm token xác thực nếu có
+    const token = localStorage.getItem("verlink-token")
+    if (token && !mergedHeaders.Authorization) {
+      mergedHeaders.Authorization = `Bearer ${token}`
+    }
+
+    // Thêm log để debug
+    console.log(`Fetching ${baseUrl}${endpoint}`)
 
     const response = await fetch(`${baseUrl}${endpoint}`, {
       ...options,
@@ -62,13 +74,13 @@ export async function fetchApi<T = any>(
     // Kiểm tra response status
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message ?? `API request failed with status ${response.status}`)
+      throw new Error(errorData.message || `API request failed with status ${response.status}`)
     }
 
     // Kiểm tra nếu response là rỗng
     const contentType = response.headers.get("content-type")
     if (contentType?.includes("application/json")) {
-      return (await response.json()).data as unknown as T
+      return await response.json()
     }
 
     return (await response.text()) as unknown as T
@@ -473,6 +485,24 @@ export async function sendMessage(
 }
 
 /**
+ * Hàm lấy danh sách bài viết với phân trang
+ */
+export async function fetchPosts(page = 1, limit = 10): Promise<any> {
+  return fetchApi(`/api/posts?page=${page}&limit=${limit}`, {
+    method: "GET",
+  })
+}
+
+/**
+ * Hàm lấy danh sách tin nhắn với phân trang
+ */
+export async function fetchMessages(userId: string | number, page = 1, limit = 20): Promise<any> {
+  return fetchApi(`/api/messages?userId=${userId}&page=${page}&limit=${limit}`, {
+    method: "GET",
+  })
+}
+
+/**
  * Hàm kiểm tra kích thước file và loại file
  * @returns Đối tượng chứa thông tin về tính hợp lệ của file
  */
@@ -494,29 +524,27 @@ export function validateFile(
   }
 
   // Kiểm tra loại file (nếu có)
-  if (allowedTypes && allowedTypes.length > 0) {
-    const fileType = file.type.split("/")[0] // Lấy phần chính của MIME type (image, video, ...)
-    const fileExtension = file.name.split(".").pop()?.toLowerCase()
+  const fileType = file.type.split("/")[0] // Lấy phần chính của MIME type (image, video, ...)
+  const fileExtension = file.name.split(".").pop()?.toLowerCase()
 
-    const isTypeAllowed = allowedTypes.some((type) => {
-      // Kiểm tra MIME type
-      if (file.type.startsWith(type)) {
-        return true
-      }
+  const isTypeAllowed = allowedTypes?.some((type) => {
+    // Kiểm tra MIME type
+    if (file.type.startsWith(type)) {
+      return true
+    }
 
-      // Kiểm tra extension
-      if (fileExtension && type.startsWith(".") && type.substring(1) === fileExtension) {
-        return true
-      }
+    // Kiểm tra extension
+    if (fileExtension && type.startsWith(".") && type.substring(1) === fileExtension) {
+      return true
+    }
 
-      return false
-    })
+    return false
+  })
 
-    if (!isTypeAllowed) {
-      return {
-        valid: false,
-        error: `Loại file không được hỗ trợ. Các loại file được phép: ${allowedTypes.join(", ")}`,
-      }
+  if (allowedTypes && !isTypeAllowed) {
+    return {
+      valid: false,
+      error: `Loại file không được hỗ trợ. Các loại file được phép: ${allowedTypes.join(", ")}`,
     }
   }
 

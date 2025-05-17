@@ -1,6 +1,8 @@
-import { formatDistance } from "date-fns"
-import { vi } from "date-fns/locale"
+"use client"
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { format, isToday, isYesterday } from "date-fns"
+import { vi } from "date-fns/locale"
 
 export interface Message {
   id: string
@@ -10,10 +12,9 @@ export interface Message {
   recipientId: string | number
   sender?: {
     id: string | number
-    name: string
-    image: string
+    username: string
+    image?: string
   }
-  isRead?: boolean
 }
 
 interface ChatMessageProps {
@@ -22,42 +23,42 @@ interface ChatMessageProps {
 }
 
 export function ChatMessage({ message, isCurrentUser }: ChatMessageProps) {
-  const formattedTime = formatDistance(new Date(message.timestamp), new Date(), {
-    addSuffix: true,
-    locale: vi,
-  })
-
-  if (isCurrentUser) {
-    return (
-      <div className="flex flex-row-reverse items-end gap-2 mb-4">
-        <div className="flex flex-col items-end">
-          <div className="bg-primary text-primary-foreground px-4 py-2 rounded-2xl rounded-tr-sm max-w-xs break-words">
-            <p>{message.content}</p>
-          </div>
-          <span className="text-xs text-muted-foreground mt-1">{formattedTime}</span>
-        </div>
-      </div>
-    )
+  // Format timestamp
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp)
+    if (isToday(date)) {
+      return format(date, "HH:mm", { locale: vi })
+    } else if (isYesterday(date)) {
+      return `Hôm qua, ${format(date, "HH:mm", { locale: vi })}`
+    } else {
+      return format(date, "dd/MM/yyyy HH:mm", { locale: vi })
+    }
   }
 
   return (
-    <div className="flex items-end gap-2 mb-4">
-      {message.sender && (
-        <Avatar className="h-8 w-8">
-          <AvatarImage src={message.sender.image || "/placeholder.svg"} alt={message.sender.name} />
+    <div className={`flex items-end gap-2 ${isCurrentUser ? "flex-row-reverse" : ""}`}>
+      {!isCurrentUser && message.sender && (
+        <Avatar className="h-8 w-8 flex-shrink-0">
+          <AvatarImage src={message.sender.image || "/placeholder.svg"} alt={message.sender.username} />
           <AvatarFallback>
-            {message.sender.name
+            {message.sender.username
               .split(" ")
               .map((n) => n[0])
               .join("")}
           </AvatarFallback>
         </Avatar>
       )}
-      <div className="flex flex-col">
-        <div className="bg-muted px-4 py-2 rounded-2xl rounded-tl-sm max-w-xs break-words">
-          <p>{message.content}</p>
+      <div className={`flex flex-col ${isCurrentUser ? "items-end" : ""}`}>
+        <div
+          className={`px-3 py-2 rounded-2xl max-w-[200px] break-words ${
+            isCurrentUser
+              ? "bg-primary text-primary-foreground rounded-tr-sm"
+              : "bg-muted text-foreground rounded-tl-sm"
+          }`}
+        >
+          <p className="text-sm">{message.content}</p>
         </div>
-        <span className="text-xs text-muted-foreground mt-1">{formattedTime}</span>
+        <span className="text-xs text-muted-foreground mt-1">{formatTimestamp(message.timestamp)}</span>
       </div>
     </div>
   )
