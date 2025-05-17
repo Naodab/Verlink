@@ -1,19 +1,21 @@
 package com.doxan.doxan.adapter.out.websocket;
 
 import com.doxan.doxan.domain.model.Notification;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.web.socket.TextMessage;
+import org.springframework.web.socket.WebSocketSession;
 
 @Slf4j
 @Component
 public class KafkaListenerAdapter {
-    private final SimpMessagingTemplate messagingTemplate;
+    private final ObjectMapper objectMapper;
 
-    KafkaListenerAdapter(final SimpMessagingTemplate messagingTemplate) {
-        this.messagingTemplate = messagingTemplate;
+    public KafkaListenerAdapter(final ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
     }
 
     @KafkaListener(
@@ -24,6 +26,17 @@ public class KafkaListenerAdapter {
     public void listen(ConsumerRecord<String, Notification> consumer) {
         Notification notification = consumer.value();
         log.info(notification.getContent());
-        messagingTemplate.convertAndSend("/topic/notifications/" + notification.getRecipient().getId(), notification);
+        WebSocketSession session = WebSocketSessionManager.getSession(notification.getRecipient().getId());
+
+        if (session != null && session.isOpen()) {
+            try {
+                String payload = objectMapper.writeValueAsString(notification);
+                session.sendMessage(new TextMessage(payload));
+            } catch (Exception e) {
+                log.error("Error sending notification to user {}: {}", notification.getRecipient().getId(), e.getMessage());
+            }
+        } else {
+            log.warn("User {} not connected via WebSocket", notification.getRecipient().getId());
+        }
     }
 }

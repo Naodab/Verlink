@@ -27,6 +27,10 @@ public class SecurityConfig {
             "/users", "/auth/**", "/roles", "/permissions"
     };
 
+    private final String[] WEBSOCKET_ENDPOINTS = {
+            "/websocket/**"
+    };
+
     private final CustomJwtDecoder customJwtDecoder;
 
     public SecurityConfig(CustomJwtDecoder customJwtDecoder) {
@@ -38,6 +42,8 @@ public class SecurityConfig {
         http.cors(Customizer.withDefaults())
             .authorizeHttpRequests(request ->
                 request.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS)
+                        .permitAll()
+                        .requestMatchers(WEBSOCKET_ENDPOINTS)
                         .permitAll()
                         .anyRequest()
                         .authenticated());

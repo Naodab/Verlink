@@ -111,6 +111,18 @@ public class AuthenticationService implements AuthenticationUseCase {
         }
     }
 
+    @Override
+    public UserResponse verify(IntrospectRequest request) {
+        try {
+            SignedJWT signedJWT = verifyToken(request.getToken(), false);
+            User user = userRepository.findById(signedJWT.getJWTClaimsSet().getSubject())
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+            return userDTOMapper.toResponse(user);
+        } catch (JOSEException | ParseException e) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+    }
+
     private SignedJWT saveInvalidToken(String token) throws JOSEException, ParseException {
         SignedJWT signedJWT = verifyToken(token, true);
 

@@ -16,5 +16,6 @@ public interface AuthenticationUseCase {
     LoginResponse authenticate(LoginRequest request);
     UserResponse authenticate(IntrospectRequest request) throws ParseException, JOSEException;
     TokenResponse refreshToken(RefreshRequest request);
+    UserResponse verify(IntrospectRequest request);
     void logout(LogoutRequest request);
 }
