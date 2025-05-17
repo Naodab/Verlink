@@ -1,5 +1,6 @@
 package com.doxan.doxan.domain.model;
 
+import com.doxan.doxan.domain.model.enums.ActivityState;
 import com.doxan.doxan.domain.model.enums.Gender;
 import lombok.*;
 
@@ -26,5 +27,7 @@ public class User {
     private Gender gender;
     private LocalDate dob;
     private LocalDateTime createdAt;
+    private ActivityState activityState;
+    private boolean activate;
     private Set<Role> roles;
 }
