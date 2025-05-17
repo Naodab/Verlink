@@ -5,15 +5,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Phone, PhoneOff, MicOff, Mic } from "lucide-react"
-
-interface CallData {
-  id: string
-  callerId: number | string
-  callerName: string
-  callerImage: string
-  timestamp: string
-  roomId: string
-}
+import { CallData } from "@/types/dto/response/call-data"
 
 interface CallModalProps {
   call: CallData
@@ -27,7 +19,6 @@ export function CallModal({ call, active = false, onAnswer, onEnd }: CallModalPr
   const [isMuted, setIsMuted] = useState(false)
   const [isOpen, setIsOpen] = useState(true)
 
-  // Tính thời gian cuộc gọi
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null
 
@@ -42,14 +33,12 @@ export function CallModal({ call, active = false, onAnswer, onEnd }: CallModalPr
     }
   }, [active])
 
-  // Format thời gian cuộc gọi
   const formatCallDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
   }
 
-  // Xử lý khi đóng modal
   const handleClose = () => {
     if (!active && onAnswer) {
       onAnswer("missed")
@@ -57,10 +46,8 @@ export function CallModal({ call, active = false, onAnswer, onEnd }: CallModalPr
     setIsOpen(false)
   }
 
-  // Xử lý khi bật/tắt mic
   const toggleMute = () => {
     setIsMuted(!isMuted)
-    // Trong ứng dụng thực tế, bạn sẽ thực hiện các thao tác với audio stream
   }
 
   return (
@@ -68,11 +55,11 @@ export function CallModal({ call, active = false, onAnswer, onEnd }: CallModalPr
       <DialogContent className="sm:max-w-md">
         <div className="flex flex-col items-center justify-center py-6">
           <Avatar className="h-24 w-24 mb-4">
-            <AvatarImage src={call.callerImage || "/placeholder.svg"} alt={call.callerName} />
-            <AvatarFallback className="text-2xl">{call.callerName.charAt(0)}</AvatarFallback>
+            <AvatarImage src={call.callerImage.url ?? "/placeholder.svg"} alt={call.callerUsername} />
+            <AvatarFallback className="text-2xl">{call.callerUsername.charAt(0)}</AvatarFallback>
           </Avatar>
 
-          <h2 className="text-xl font-semibold mb-1">{call.callerName}</h2>
+          <h2 className="text-xl font-semibold mb-1">{call.callerUsername}</h2>
 
           {active ? (
             <p className="text-sm text-muted-foreground mb-6">{formatCallDuration(callDuration)}</p>

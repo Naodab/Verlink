@@ -5,16 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Phone, PhoneOff, MicOff, Mic, Video, VideoOff, X, Minimize2, Maximize2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-
-interface CallData {
-  id: string
-  callerId: number | string
-  callerUsername: string
-  callerImage: string
-  timestamp: string
-  roomId: string
-  type: "voice" | "video"
-}
+import { CallData } from "@/types/dto/response/call-data"
 
 interface CallOverlayProps {
   call: CallData
@@ -77,7 +68,7 @@ export function CallOverlay({
     return (
       <div className="fixed bottom-4 right-4 z-50 bg-background rounded-full shadow-lg p-2 flex items-center gap-2 border border-border animate-bounce">
         <Avatar className="h-8 w-8">
-          <AvatarImage src={call.callerImage || "/placeholder.svg"} alt={call.callerUsername || "User"} />
+          <AvatarImage src={call.callerImage.url ?? "/placeholder.svg"} alt={call.callerUsername || "User"} />
           <AvatarFallback>{call.callerUsername?.charAt(0) || "U"}</AvatarFallback>
         </Avatar>
         <div className="flex items-center gap-1">
@@ -112,7 +103,7 @@ export function CallOverlay({
       <div className="flex items-center justify-between p-3 border-b">
         <div className="flex items-center gap-2">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={call.callerImage || "/placeholder.svg"} alt={call.callerUsername || "User"} />
+            <AvatarImage src={call.callerImage.url ?? "/placeholder.svg"} alt={call.callerUsername || "User"} />
             <AvatarFallback className="text-2xl">{call.callerUsername?.charAt(0) || "U"}</AvatarFallback>
           </Avatar>
           <div>
@@ -146,14 +137,14 @@ export function CallOverlay({
             {/* Video content would go here */}
             <div className="absolute inset-0 flex items-center justify-center">
               <Avatar className="h-24 w-24">
-                <AvatarImage src={call.callerImage || "/placeholder.svg"} alt={call.callerUsername || "User"} />
+                <AvatarImage src={call.callerImage.url ?? "/placeholder.svg"} alt={call.callerUsername || "User"} />
                 <AvatarFallback className="text-2xl">{call.callerUsername?.charAt(0) || "U"}</AvatarFallback>
               </Avatar>
             </div>
           </div>
         ) : (
           <Avatar className="h-20 w-20 mb-4">
-            <AvatarImage src={call.callerImage || "/placeholder.svg"} alt={call.callerUsername || "User"} />
+            <AvatarImage src={call.callerImage.url ?? "/placeholder.svg"} alt={call.callerUsername || "User"} />
             <AvatarFallback className="text-2xl">{call.callerUsername?.charAt(0) || "U"}</AvatarFallback>
           </Avatar>
         )}

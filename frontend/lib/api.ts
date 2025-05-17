@@ -74,7 +74,7 @@ export async function fetchApi<T = any>(
     // Kiểm tra response status
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || `API request failed with status ${response.status}`)
+      throw new Error(errorData.message ?? `API request failed with status ${response.status}`)
     }
 
     // Kiểm tra nếu response là rỗng

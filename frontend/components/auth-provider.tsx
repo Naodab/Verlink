@@ -1,37 +1,13 @@
 "use client"
 
 import type React from "react"
-import type { Gender } from "@/types/user"
+import type { User } from "@/types/models/user"
 
 import { createContext, useContext, useEffect, useState } from "react"
 import { fetchApi } from "@/lib/api"
 import { getWebSocketService } from "@/lib/websocket"
-
-type User = {
-  id: string
-  username: string
-  firstName: string
-  lastName: string
-  email: string
-  phone?: string
-  gender: Gender
-  dob?: Date
-  profileImage?: {
-    id: string
-    url: string
-  }
-}
-
-type RegisterData = {
-  firstName: string
-  lastName: string
-  username: string
-  email: string
-  phone: string
-  password: string
-  gender: Gender
-  dob?: Date
-}
+import type { RegisterData } from "@/types/dto/request/register-user-data"
+import { ApiResponse } from "@/types/dto/response/api-response"
 
 type AuthContextType = {
   user: User | null
@@ -60,6 +36,11 @@ const MOCK_USER: User = {
     id: "img-1",
     url: "/placeholder.svg?height=200&width=200",
   },
+  coverImage: {
+    id: "img-1",
+    url: "/placeholder.svg?height=200&width=200",
+  },
+  createdAt: new Date(),
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -98,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
-      const userData = await fetchApi<{code: number, data: User}>("/auth/me", {
+      const userData = await fetchApi<ApiResponse<User>>("/auth/me", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -130,7 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      const response = await fetchApi<{code : number, data: { user: User; token: string }}>("/auth/login", {
+      const response = await fetchApi<ApiResponse<{ user: User; token: string }>>("/auth/login", {
         method: "POST",
         body: JSON.stringify({ username: email, password }),
       })
@@ -196,7 +177,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!isApiConfigured()) {
         console.warn("API URL not configured. Using mock data for development.")
 
-        // Giả lập cập nhật ảnh đại diện
         setUser({
           ...user,
           profileImage: {
@@ -207,7 +187,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return true
       }
 
-      // Nếu API URL được cấu hình, tiếp tục với logic gọi API thực tế
       const updatedUser = await fetchApi<User>("/api/users/profile-image", {
         method: "PUT",
         body: JSON.stringify({ imageUrl }),

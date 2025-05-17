@@ -5,36 +5,36 @@ import Image from "next/image"
 import { X, Play, Plus, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { MediaPreview } from "./media-preview"
-import type { MediaFile } from "@/components/post-card"
+import type { Media } from "@/types/models/media"
 
 // Cập nhật interface MediaGridProps để làm rõ rằng images và videos là mảng URL
 
 interface MediaGridProps {
   images: string[] // URLs của ảnh
   videos: string[] // URLs của video
-  docs?: MediaFile[] // Thông tin đầy đủ của tài liệu
+  docs?: Media[] // Thông tin đầy đủ của tài liệu
   editable?: boolean
   onRemove?: (type: "image" | "video" | "doc", index: number) => void
   videoFirst?: boolean
 }
 
-// Hàm kiểm tra xem một media có phải là MediaFile object hay không
-const isMediaFile = (media: any): media is MediaFile => {
+// Hàm kiểm tra xem một media có phải là Media object hay không
+const isMedia = (media: any): media is Media => {
   return media && typeof media === "object" && "id" in media && "url" in media
 }
 
-// Hàm lấy URL từ media (có thể là string hoặc MediaFile)
-const getMediaUrl = (media: string | MediaFile): string => {
-  if (isMediaFile(media)) {
+// Hàm lấy URL từ media (có thể là string hoặc Media)
+const getMediaUrl = (media: string | Media): string => {
+  if (isMedia(media)) {
     return media.url
   }
   return media
 }
 
 // Hàm lấy tên file từ media
-const getMediaName = (media: string | MediaFile): string => {
-  if (isMediaFile(media)) {
-    return media.name
+const getMediaName = (media: string | Media): string => {
+  if (isMedia(media)) {
+    return media.name ?? "Unnamed"
   }
   // Nếu là string URL, lấy phần cuối cùng sau dấu /
   const parts = media.split("/")
@@ -89,8 +89,8 @@ export function MediaGrid({
   }
 
   // Xác định media type
-  const getMediaType = (media: string | MediaFile): "image" | "video" => {
-    if (isMediaFile(media)) {
+  const getMediaType = (media: string | Media): "image" | "video" | "document"=> {
+    if (isMedia(media)) {
       return media.type.startsWith("video/") ? "video" : "image"
     }
     return media.includes("Video") ? "video" : "image"
@@ -111,7 +111,7 @@ export function MediaGrid({
   }
 
   // Xử lý khi click vào file PDF để mở trong tab mới
-  const handleDocClick = (doc: MediaFile) => {
+  const handleDocClick = (doc: Media) => {
     window.open(doc.url, "_blank")
   }
 

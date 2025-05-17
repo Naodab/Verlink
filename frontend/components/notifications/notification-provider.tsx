@@ -12,7 +12,7 @@ export interface Notification {
   content: string
   timestamp: string
   read: boolean
-  link: string
+  url: string
   notificationType?: "reaction" | "comment" | "friendRequest" | "message" | "other"
   postId?: string
   user?: {
@@ -44,13 +44,15 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       websocket.connect()
 
       const handleNotification = (data: any) => {
+        alert("Notification received")
         if (data.type === "notification") {
+          alert("Notification data: " + JSON.stringify(data))
           const newNotification: Notification = {
             id: data.id,
             content: data.content,
             timestamp: data.timestamp,
             read: data.read || false,
-            link: data.link || "#",
+            url: data.link || "#",
             notificationType: data.notificationType || "other",
             postId: data.postId,
             user: data.user,
@@ -107,7 +109,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         if (notification.postId) {
           router.push(`/post/${notification.postId}`)
         } else {
-          router.push(notification.link)
+          router.push(notification.url)
         }
         break
       case "friendRequest":
@@ -117,7 +119,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         router.push(`/messages?userId=${notification.user?.id}`)
         break
       default:
-        router.push(notification.link)
+        router.push(notification.url)
         break
     }
   }

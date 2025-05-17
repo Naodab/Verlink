@@ -17,7 +17,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import type { Gender } from "@/types/user"
+import type { Gender } from "@/types/models/user"
 import { fetchApi } from "@/lib/api"
 
 export default function RegisterPage() {

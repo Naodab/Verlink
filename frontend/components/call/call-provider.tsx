@@ -5,16 +5,7 @@ import { getWebSocketService } from "@/lib/websocket"
 import { CallOverlay } from "./call-overlay"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
-
-interface CallData {
-  id: string
-  callerId: number | string
-  callerUsername: string
-  callerImage: string
-  timestamp: string
-  roomId: string
-  type: "voice" | "video"
-}
+import { CallData } from "@/types/dto/response/call-data"
 
 interface CallContextType {
   currentCall: CallData | null
@@ -106,7 +97,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
   }, [activeCall, toast, websocket])
 
-  const makeCall = (userId: number | string) => {
+  const makeCall = (userId: string | number) => {
     if (activeCall) {
       toast({
         title: "Không thể thực hiện cuộc gọi",
@@ -133,9 +124,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
     setTimeout(() => {
       const callData: CallData = {
         id: callId,
-        callerId: userId,
+        callerId: String(userId),
         callerUsername: `User ${userId}`, // Đảm bảo luôn có giá trị
-        callerImage: "/placeholder.svg",
+        callerImage: {
+          url: "/placeholder.svg",
+          id: ""
+        },
         timestamp: new Date().toISOString(),
         roomId,
         type: "voice",
@@ -176,9 +170,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
     setTimeout(() => {
       const callData: CallData = {
         id: callId,
-        callerId: userId,
+        callerId: String(userId),
         callerUsername: `User ${userId}`, // Đảm bảo luôn có giá trị
-        callerImage: "/placeholder.svg",
+        callerImage: {
+          url: "/placeholder.svg",
+          id: ""
+        },
         timestamp: new Date().toISOString(),
         roomId,
         type: "video",

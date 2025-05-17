@@ -15,50 +15,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { CommentsSection } from "./comments/comments-section"
-import type { CommentData } from "./comments/comment-item"
 import { MediaGrid } from "./post/media-grid"
 import { SavePostButton } from "./post/save-post-button"
-
-export interface PostAuthor {
-  id: string | number
-  username: string
-  image?: string
-  profileUrl?: string
-}
-
-// Định nghĩa interface cho media files
-export interface MediaFile {
-  id: string
-  url: string
-  name: string
-  type: string
-  size: number
-}
-
-// Cập nhật interface PostData
-export interface PostData {
-  id: string | number
-  content: string
-  images?: string[] | MediaFile[]
-  videos?: string[] | MediaFile[]
-  docs?: MediaFile[]
-  location?: string
-  visibility: "PUBLIC" | "FRIENDS" | "PRIVATE"
-  createdAt: string | Date
-  author: PostAuthor
-  commentsCount?: number
-  sharesCount?: number
-  comments?: CommentData[]
-  isEdited?: boolean
-  reactionCounts?: {
-    like: number
-    love: number
-    haha: number
-    wow: number
-    sad: number
-    angry: number
-  }
-}
+import { Media } from "@/types/models/media"
+import { PostData } from "@/types/dto/response/post-data"
 
 interface PostCardProps {
   post: PostData
@@ -92,7 +52,7 @@ const getPrivacyLabel = (visibility: string) => {
 }
 
 // Hàm kiểm tra xem một media có phải là MediaFile object hay không
-const isMediaFile = (media: any): media is MediaFile => {
+const isMediaFile = (media: any): media is Media => {
   return media && typeof media === "object" && "id" in media && "url" in media
 }
 
@@ -154,16 +114,15 @@ export function PostCard({ post, onCommentClick, onShareClick }: PostCardProps) 
   return (
     <Card className="overflow-hidden card-hover mb-6">
       <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-        <Link href={post.author.profileUrl || `/profile/${post.author.id}`} className="flex items-center flex-1">
+        <Link href={post.author.profileUrl ?? `/profile/${post.author.id}`} className="flex items-center flex-1">
           <Avatar className="h-10 w-10 mr-4">
-            <AvatarImage src={post.author.image || "/placeholder.svg"} alt={post.author.username} />
+            <AvatarImage src={post.author.profileImage?.url ?? "/placeholder.svg"} alt={post.author.username} />
             <AvatarFallback className="bg-primary/80 text-primary-foreground">
               {post.author.username.charAt(0)}
             </AvatarFallback>
           </Avatar>
           <div>
             <div className="font-semibold">{post.author.username}</div>
-            {/* Hiển thị quyền riêng tư và thông tin khác */}
             <div className="flex items-center text-xs text-muted-foreground">
               <span>{formattedDate}</span>
               {post.location && (
@@ -252,7 +211,6 @@ export function PostCard({ post, onCommentClick, onShareClick }: PostCardProps) 
           </div>
         </div>
 
-        {/* Comments Section */}
         {showComments && <CommentsSection postId={post.id} initialComments={post.comments || []} />}
       </CardFooter>
     </Card>

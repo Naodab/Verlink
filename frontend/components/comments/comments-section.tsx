@@ -2,12 +2,13 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { CommentItem, type CommentData } from "./comment-item"
+import { CommentItem } from "./comment-item"
 import { CommentInput } from "./comment-input"
 import { useAuth } from "@/components/auth-provider"
+import { CommentData } from "@/types/dto/response/comment-data"
 
 interface CommentsSectionProps {
-  postId: string | number
+  postId: string
   initialComments?: CommentData[]
 }
 
@@ -27,15 +28,15 @@ export function CommentsSection({ postId, initialComments = [] }: CommentsSectio
           return {
             ...comment,
             replies: [
-              ...(comment.replies || []),
+              ...(comment.replies ?? []),
               {
                 id: `reply-${Date.now()}`,
                 content,
                 createdAt: new Date(),
                 author: {
                   id: user.id,
-                  name: user.name,
-                  image: user.profileImage,
+                  username: user.username,
+                  profileImage: user.profileImage,
                 },
                 likes: 0,
               },
@@ -54,8 +55,8 @@ export function CommentsSection({ postId, initialComments = [] }: CommentsSectio
         createdAt: new Date(),
         author: {
           id: user.id,
-          name: user.name,
-          image: user.profileImage,
+          username: user.username,
+          profileImage: user.profileImage,
         },
         likes: 0,
       }
@@ -66,7 +67,7 @@ export function CommentsSection({ postId, initialComments = [] }: CommentsSectio
   const handleReply = (commentId: string | number) => {
     const comment = comments.find((c) => c.id === commentId)
     if (comment) {
-      setReplyingTo({ commentId, authorName: comment.author.name })
+      setReplyingTo({ commentId, authorName: comment.author.username })
     }
   }
 
@@ -146,12 +147,13 @@ export function CommentsSection({ postId, initialComments = [] }: CommentsSectio
 
       {user && (
         <CommentInput
-          userImage={user.profileImage}
-          userName={user.name}
+          userImage={user.profileImage?.url}
+          userName={user.username}
           onSubmit={handleAddComment}
           replyingTo={replyingTo?.authorName}
           onCancelReply={() => setReplyingTo(null)}
-          autoFocus={!!replyingTo}
+          autoFocus={!!replyingTo} 
+          postId={postId}
         />
       )}
     </div>
