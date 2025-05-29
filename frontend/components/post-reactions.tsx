@@ -4,20 +4,13 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Heart, ThumbsUp, Smile } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-
-type ReactionType = "like" | "love" | "haha" | "wow" | "angry" | null
-
-interface ReactionOption {
-  type: ReactionType
-  emoji: string
-  label: string
-  color: string
-}
+import { ReactionOption, ReactionType } from "@/types/models/reaction-option"
 
 const reactionOptions: ReactionOption[] = [
   { type: "like", emoji: "👍", label: "Thích", color: "text-blue-500" },
   { type: "love", emoji: "❤️", label: "Yêu thích", color: "text-red-500" },
   { type: "haha", emoji: "😂", label: "Haha", color: "text-yellow-500" },
+  { type: "sad", emoji: "😢", label: "Buồn", color: "text-blue-500" },
   { type: "wow", emoji: "😮", label: "Wow", color: "text-yellow-500" },
   { type: "angry", emoji: "😡", label: "Phẫn nộ", color: "text-orange-500" },
 ]
@@ -27,7 +20,7 @@ interface PostReactionsProps {
 }
 
 export function PostReactions({ postId }: PostReactionsProps) {
-  const [currentReaction, setCurrentReaction] = useState<ReactionType>(null)
+  const [currentReaction, setCurrentReaction] = useState<ReactionType | null>(null)
   const [reactionCounts, setReactionCounts] = useState({
     like: Math.floor(Math.random() * 50),
     love: Math.floor(Math.random() * 30),
@@ -42,7 +35,7 @@ export function PostReactions({ postId }: PostReactionsProps) {
     if (currentReaction === reaction) {
       setReactionCounts((prev) => ({
         ...prev,
-        [reaction!]: Math.max(0, prev[reaction as keyof typeof prev] - 1),
+        [reaction]: Math.max(0, prev[reaction as keyof typeof prev] - 1),
       }))
       setCurrentReaction(null)
     }
@@ -107,7 +100,7 @@ export function PostReactions({ postId }: PostReactionsProps) {
             <Button
               variant="ghost"
               size="sm"
-              className={`flex items-center gap-1 hover:bg-muted ${currentReactionDetails?.color || ""}`}
+              className={`flex items-center gap-1 hover:bg-muted ${currentReactionDetails?.color ?? ""}`}
             >
               {currentReactionDetails ? (
                 <>

@@ -12,23 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-
-export interface CommentAuthor {
-  id: string | number
-  username: string
-  image?: string
-  profileUrl?: string
-}
-
-export interface CommentData {
-  id: string | number
-  content: string
-  createdAt: string | Date
-  author: CommentAuthor
-  likes: number
-  isLiked?: boolean
-  replies?: CommentData[]
-}
+import { CommentData } from "@/types/dto/response/comment-data"
 
 interface CommentItemProps {
   comment: CommentData
@@ -53,7 +37,7 @@ export function CommentItem({ comment, onReply, onLike, onDelete, isReply = fals
   return (
     <div className={`flex gap-2 ${isReply ? "ml-12 mt-2" : "mt-4"}`}>
       <Avatar className="h-8 w-8 flex-shrink-0">
-        <AvatarImage src={comment.author.image ?? "/placeholder.svg"} alt={comment.author.username} />
+        <AvatarImage src={comment.author?.profileImage?.url ?? "/placeholder.svg"} alt={comment.author.username} />
         <AvatarFallback className="bg-primary/80 text-primary-foreground">
           {comment.author.username.charAt(0)}
         </AvatarFallback>

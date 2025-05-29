@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/components/auth-provider"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Loader2 } from "lucide-react"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -24,50 +25,70 @@ export default function LoginPage() {
     setError("")
 
     if (!email || !password) {
-      setError("Please fill in all fields")
+      setError("Vui lòng nhập email và mật khẩu")
       return
     }
 
-    const success = await login(email, password)
-    if (success) {
-      router.push("/feed")
-    } else {
-      setError("Invalid email or password")
+    try {
+      const success = await login(email, password)
+      if (success) {
+        
+        router.push("/feed")
+      } else {
+        setError("Đăng nhập không thành công. Vui lòng kiểm tra lại email và mật khẩu.")
+      }
+    } catch (error) {
+      console.error("Login error:", error)
+      setError(`Đăng nhập không thành công: ${error instanceof Error ? error.message : "Lỗi không xác định"}`)
     }
   }
 
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
-      </div>
-
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md animate-fade-in">
-          <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_center,rgba(245,229,61,0.15),transparent_70%)]"></div>
+          <div className="absolute inset-0 -z-10">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(245,229,61,0.15),transparent_70%)]"></div>
+            {Array.from({ length: 50 }).map((_, i) => (
+              <div
+                key={i}
+                className="absolute rounded-full bg-white star"
+                style={
+                  {
+                    width: Math.random() * 2 + 1 + "px",
+                    height: Math.random() * 2 + 1 + "px",
+                    top: Math.random() * 100 + "%",
+                    left: Math.random() * 100 + "%",
+                    opacity: Math.random() * 0.5 + 0.2,
+                    "--delay": Math.random() * 5,
+                  } as React.CSSProperties
+                }
+              />
+            ))}
+          </div>
 
-          <Card className="w-full max-w-md glass-effect">
+          <Card className="w-full max-w-md glass-effect bg-black/70">
             <CardHeader className="space-y-1">
               <div className="flex justify-center mb-4">
                 <Link href="/" className="flex items-center space-x-2">
                   <span className="text-3xl font-bold text-primary glow-text">Verlink</span>
                 </Link>
               </div>
-              <CardTitle className="text-2xl font-bold text-center">Welcome Back</CardTitle>
-              <CardDescription className="text-center">Enter your credentials to access your account</CardDescription>
+              <CardTitle className="text-2xl font-bold text-center">Đăng nhập</CardTitle>
+              <CardDescription className="text-center">Nhập thông tin đăng nhập của bạn</CardDescription>
             </CardHeader>
             <form onSubmit={handleSubmit}>
               <CardContent className="space-y-4">
                 {error && (
-                  <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md animate-pulse-slow">
-                    {error}
-                  </div>
+                  <Alert variant="destructive" className="animate-pulse-slow">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
                 )}
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
-                    placeholder="m@example.com"
+                    placeholder="email@example.com"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -77,9 +98,9 @@ export default function LoginPage() {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="password">Password</Label>
-                    <Link href="/forgot-password" className="text-sm text-primary underline-offset-4 hover:underline">
-                      Forgot password?
+                    <Label htmlFor="password" className="text-white">Mật khẩu</Label>
+                    <Link href="/forgot-password" className="text-xs text-primary hover:underline underline-offset-4">
+                      Quên mật khẩu?
                     </Link>
                   </div>
                   <Input
@@ -100,17 +121,17 @@ export default function LoginPage() {
                 >
                   {isLoading ? (
                     <>
-                      <div className="h-4 w-4 mr-2 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin"></div>
-                      Logging in...
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Đang đăng nhập...
                     </>
                   ) : (
-                    "Sign In"
+                    "Đăng nhập"
                   )}
                 </Button>
-                <div className="text-center text-sm">
-                  Don&apos;t have an account?{" "}
+                <div className="text-center text-sm text-white">
+                  Chưa có tài khoản?{" "}
                   <Link href="/register" className="text-primary underline-offset-4 hover:underline">
-                    Create account
+                    Đăng ký
                   </Link>
                 </div>
               </CardFooter>

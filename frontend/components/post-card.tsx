@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal, MessageSquare, Share } from "lucide-react"
+import { MoreHorizontal, MessageSquare, Share, Globe, Users, Lock } from "lucide-react"
 import { PostReactions } from "@/components/post-reactions"
 import {
   DropdownMenu,
@@ -15,32 +15,45 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { CommentsSection } from "./comments/comments-section"
-import type { CommentData } from "./comments/comment-item"
-
-export interface PostAuthor {
-  id: string | number
-  username: string
-  image?: string
-  profileUrl?: string
-}
-
-export interface PostData {
-  id: string | number
-  content: string
-  images?: string[]
-  videos?: string[]
-  location?: string
-  createdAt: string | Date
-  author: PostAuthor
-  commentsCount?: number
-  sharesCount?: number
-  comments?: CommentData[]
-}
+import { MediaGrid } from "./post/media-grid"
+import { SavePostButton } from "./post/save-post-button"
+import { Media } from "@/types/models/media"
+import { PostData } from "@/types/dto/response/post-data"
 
 interface PostCardProps {
   post: PostData
   onCommentClick?: (postId: string | number) => void
   onShareClick?: (postId: string | number) => void
+}
+
+// Thêm hàm để lấy icon và label cho quyền riêng tư
+const getPrivacyIcon = (visibility: string) => {
+  switch (visibility) {
+    case "FRIENDS":
+      return <Users className="h-3 w-3" />
+    case "PRIVATE":
+      return <Lock className="h-3 w-3" />
+    case "PUBLIC":
+    default:
+      return <Globe className="h-3 w-3" />
+  }
+}
+
+const getPrivacyLabel = (visibility: string) => {
+  switch (visibility) {
+    case "FRIENDS":
+      return "Chỉ bạn bè"
+    case "PRIVATE":
+      return "Riêng tư"
+    case "PUBLIC":
+    default:
+      return "Công khai"
+  }
+}
+
+// Hàm kiểm tra xem một media có phải là MediaFile object hay không
+const isMediaFile = (media: any): media is Media => {
+  return media && typeof media === "object" && "id" in media && "url" in media
 }
 
 export function PostCard({ post, onCommentClick, onShareClick }: PostCardProps) {
@@ -71,12 +84,39 @@ export function PostCard({ post, onCommentClick, onShareClick }: PostCardProps) 
     if (onCommentClick) onCommentClick(post.id)
   }
 
+  // Cập nhật hàm prepareImages và prepareVideos để xử lý đúng URL
+
+  // Chuẩn bị dữ liệu media cho MediaGrid
+  const prepareImages = () => {
+    if (!post.images) return []
+    return post.images.map((img) => {
+      if (isMediaFile(img)) {
+        return img.url
+      }
+      return img // Đã là URL string
+    })
+  }
+
+  const prepareVideos = () => {
+    if (!post.videos) return []
+    return post.videos.map((vid) => {
+      if (isMediaFile(vid)) {
+        return vid.url
+      }
+      return vid // Đã là URL string
+    })
+  }
+
+  const prepareDocs = () => {
+    return post.docs || []
+  }
+
   return (
     <Card className="overflow-hidden card-hover mb-6">
       <CardHeader className="flex flex-row items-center space-y-0 pb-2">
         <Link href={post.author.profileUrl ?? `/profile/${post.author.id}`} className="flex items-center flex-1">
           <Avatar className="h-10 w-10 mr-4">
-            <AvatarImage src={post.author.image ?? "/placeholder.svg"} alt={post.author.username} />
+            <AvatarImage src={post.author.profileImage?.url ?? "/placeholder.svg"} alt={post.author.username} />
             <AvatarFallback className="bg-primary/80 text-primary-foreground">
               {post.author.username.charAt(0)}
             </AvatarFallback>
@@ -89,6 +129,17 @@ export function PostCard({ post, onCommentClick, onShareClick }: PostCardProps) 
                 <>
                   <span className="mx-1">•</span>
                   <span>{post.location}</span>
+                </>
+              )}
+              <span className="mx-1">•</span>
+              <span className="flex items-center">
+                {getPrivacyIcon(post.visibility)}
+                <span className="ml-1">{getPrivacyLabel(post.visibility)}</span>
+              </span>
+              {post.isEdited && (
+                <>
+                  <span className="mx-1">•</span>
+                  <span>Đã chỉnh sửa</span>
                 </>
               )}
             </div>
@@ -124,51 +175,14 @@ export function PostCard({ post, onCommentClick, onShareClick }: PostCardProps) 
             )}
           </div>
 
-          {/* Images */}
-          {post.images && post.images.length > 0 && (
-            <div
-              className={`grid gap-2 ${
-                post.images.length === 1
-                  ? "grid-cols-1"
-                  : post.images.length === 2
-                    ? "grid-cols-2"
-                    : post.images.length === 3
-                      ? "grid-cols-2"
-                      : "grid-cols-2"
-              }`}
-            >
-              {post.images.map((image, index) => (
-                <div
-                  key={index}
-                  className={`rounded-lg overflow-hidden ${
-                    post.images && post.images.length === 3 && index === 0 ? "col-span-2 row-span-2" : ""
-                  }`}
-                >
-                  <img
-                    src={image || "/placeholder.svg"}
-                    alt={`Ảnh bài đăng ${index + 1}`}
-                    className="w-full h-full object-cover aspect-video transition-transform hover:scale-105 duration-300"
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Videos */}
-          {post.videos && post.videos.length > 0 && (
-            <div className="space-y-2">
-              {post.videos.map((video, index) => (
-                <div key={index} className="rounded-lg overflow-hidden">
-                  <video
-                    src={video}
-                    controls
-                    className="w-full"
-                    poster="/placeholder.svg?height=400&width=600&text=Video+Thumbnail"
-                  />
-                </div>
-              ))}
-            </div>
-          )}
+          {/* Sử dụng MediaGrid component để hiển thị media */}
+          <MediaGrid
+            images={prepareImages()}
+            videos={prepareVideos()}
+            docs={prepareDocs()}
+            editable={false}
+            videoFirst={true}
+          />
         </div>
       </CardContent>
       <CardFooter className="flex flex-col border-t px-6 py-3 bg-muted/30">
@@ -184,6 +198,7 @@ export function PostCard({ post, onCommentClick, onShareClick }: PostCardProps) 
               <MessageSquare className="h-4 w-4 mr-1" />
               <span>Bình luận{post.commentsCount ? ` (${post.commentsCount})` : ""}</span>
             </Button>
+            <SavePostButton postId={post.id} />
             <Button
               variant="ghost"
               size="sm"
@@ -196,7 +211,6 @@ export function PostCard({ post, onCommentClick, onShareClick }: PostCardProps) 
           </div>
         </div>
 
-        {/* Comments Section */}
         {showComments && <CommentsSection postId={post.id} initialComments={post.comments || []} />}
       </CardFooter>
     </Card>

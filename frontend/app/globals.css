@@ -153,3 +153,89 @@
   transform: translateY(-5px);
   box-shadow: 0 10px 25px -5px rgba(245, 229, 61, 0.1);
 }
+
+/* Custom styles for the landing page */
+.glow-text {
+  text-shadow: 0 0 8px rgba(245, 229, 61, 0.5);
+}
+
+/* Star animation */
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.star {
+  animation: twinkle 3s infinite;
+  animation-delay: calc(var(--delay) * 1s);
+}
+
+/* Enhanced dark mode styles */
+body {
+  background-color: black;
+  color: white;
+}
+
+/* Improved glassmorphism effect */
+.glass-effect {
+  background: rgba(30, 30, 30, 0.7);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+/* Enhanced gradient text */
+.gradient-text {
+  background: linear-gradient(90deg, hsl(var(--primary)), #fff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Enhanced glow effects */
+.glow-effect {
+  box-shadow: 0 0 15px rgba(245, 229, 61, 0.3);
+}
+
+.glow-text {
+  text-shadow: 0 0 8px rgba(245, 229, 61, 0.5);
+}
+
+/* Enhanced card hover effect */
+.card-hover {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px -5px rgba(245, 229, 61, 0.1);
+}
+
+/* Improved button hover effects */
+.btn-hover-glow:hover {
+  box-shadow: 0 0 15px rgba(245, 229, 61, 0.5);
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #111;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}

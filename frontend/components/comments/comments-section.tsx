@@ -2,12 +2,13 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { CommentItem, type CommentData } from "./comment-item"
+import { CommentItem } from "./comment-item"
 import { CommentInput } from "./comment-input"
 import { useAuth } from "@/components/auth-provider"
+import { CommentData } from "@/types/dto/response/comment-data"
 
 interface CommentsSectionProps {
-  postId: string | number
+  postId: string
   initialComments?: CommentData[]
 }
 
@@ -27,7 +28,7 @@ export function CommentsSection({ postId, initialComments = [] }: CommentsSectio
           return {
             ...comment,
             replies: [
-              ...(comment.replies || []),
+              ...(comment.replies ?? []),
               {
                 id: `reply-${Date.now()}`,
                 content,
@@ -35,7 +36,7 @@ export function CommentsSection({ postId, initialComments = [] }: CommentsSectio
                 author: {
                   id: user.id,
                   username: user.username,
-                  image: user.profileImage?.url,
+                  profileImage: user.profileImage,
                 },
                 likes: 0,
               },
@@ -55,7 +56,7 @@ export function CommentsSection({ postId, initialComments = [] }: CommentsSectio
         author: {
           id: user.id,
           username: user.username,
-          image: user.profileImage?.url,
+          profileImage: user.profileImage,
         },
         likes: 0,
       }
@@ -151,7 +152,8 @@ export function CommentsSection({ postId, initialComments = [] }: CommentsSectio
           onSubmit={handleAddComment}
           replyingTo={replyingTo?.authorName}
           onCancelReply={() => setReplyingTo(null)}
-          autoFocus={!!replyingTo}
+          autoFocus={!!replyingTo} 
+          postId={postId}
         />
       )}
     </div>

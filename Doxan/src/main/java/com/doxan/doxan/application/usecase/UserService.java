@@ -7,19 +7,20 @@ import com.doxan.doxan.domain.dto.response.user.UserResponse;
 import com.doxan.doxan.domain.exception.AppException;
 import com.doxan.doxan.domain.exception.ErrorCode;
 import com.doxan.doxan.domain.model.User;
+import com.doxan.doxan.domain.model.enums.ActivityState;
 import com.doxan.doxan.domain.port.in.UserUseCase;
 import com.doxan.doxan.domain.port.out.LocationRepositoryPort;
 import com.doxan.doxan.domain.port.out.UserRepositoryPort;
 import com.doxan.doxan.domain.port.security.PasswordEncoder;
 import com.doxan.doxan.domain.predefined.RolePredefined;
 import jakarta.transaction.Transactional;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class UserService implements UserUseCase {
@@ -50,14 +51,16 @@ public class UserService implements UserUseCase {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setCreatedAt(LocalDateTime.now());
         user.setRoles(Set.of(RolePredefined.USER));
+        user.setActivityState(ActivityState.OFFLINE);
         return userDTOMapper.toResponse(userRepository.save(user));
     }
 
     @Override
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public List<UserResponse> getAll() {
         return userRepository.findAll().stream()
-                .map(userDTOMapper::toResponse).collect(Collectors.toList());
+                .map(userDTOMapper::toResponse).toList();
     }
 
     @Override
@@ -103,6 +106,19 @@ public class UserService implements UserUseCase {
             user.setGender(request.getGender());
         }
         return userDTOMapper.toResponse(userRepository.save(user));
+    }
+
+    @Override
+    public UserResponse changeActivityState(String userId, ActivityState state) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        user.setActivityState(state);
+        return userDTOMapper.toResponse(userRepository.save(user));
+    }
+
+    @Override
+    public UserResponse changeActivityState(ActivityState state) {
+        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+        return changeActivityState(userId, state);
     }
 
     @Override

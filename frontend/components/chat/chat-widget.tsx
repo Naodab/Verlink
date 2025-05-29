@@ -2,20 +2,21 @@
 
 import type React from "react"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { X, Minimize2, Maximize2, Send, Paperclip, ImageIcon } from "lucide-react"
+import { X, Minimize2, Maximize2, Send, Paperclip, ImageIcon, Phone, Video, Loader2 } from "lucide-react"
 import { getWebSocketService } from "@/lib/websocket"
 import { ChatMessage, type Message } from "./chat-message"
+import { useCall } from "@/components/call/call-provider"
 
 interface ChatWidgetProps {
   user: {
     id: string | number
-    name: string
+    username: string
     image: string
   }
   onClose: () => void
@@ -28,13 +29,21 @@ export function ChatWidget({ user, onClose, onMinimize, position = 0 }: ChatWidg
   const [newMessage, setNewMessage] = useState("")
   const [isMinimized, setIsMinimized] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesStartRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
   const websocket = getWebSocketService()
+  const { makeCall, makeVideoCall } = useCall()
+  const [isLoadingOlder, setIsLoadingOlder] = useState(false)
+  const [hasOlderMessages, setHasOlderMessages] = useState(true)
+  const [page, setPage] = useState(1)
+  const [initialScrollHeight, setInitialScrollHeight] = useState(0)
 
+  // Scroll to bottom when new messages are added
   useEffect(() => {
-    // Scroll to bottom when messages change
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+  }, [messages.length])
 
+  // Fetch initial messages
   useEffect(() => {
     // Connect to WebSocket and listen for messages
     websocket.connect()
@@ -57,19 +66,19 @@ export function ChatWidget({ user, onClose, onMinimize, position = 0 }: ChatWidg
     const initialMessages: Message[] = [
       {
         id: "msg-1",
-        content: `Xin chào! Tôi là ${user.name}.`,
+        content: `Xin chào! Tôi là ${user.username}.`,
         timestamp: new Date(Date.now() - 3600000).toISOString(),
         senderId: user.id,
         recipientId: "me",
         sender: {
           id: user.id,
-          name: user.name,
+          username: user.username,
           image: user.image,
         },
       },
       {
         id: "msg-2",
-        content: `Chào ${user.name}! Bạn khỏe không?`,
+        content: `Chào ${user.username}! Bạn khỏe không?`,
         timestamp: new Date(Date.now() - 3500000).toISOString(),
         senderId: "me",
         recipientId: user.id,
@@ -82,7 +91,7 @@ export function ChatWidget({ user, onClose, onMinimize, position = 0 }: ChatWidg
         recipientId: "me",
         sender: {
           id: user.id,
-          name: user.name,
+          username: user.username,
           image: user.image,
         },
       },
@@ -93,7 +102,100 @@ export function ChatWidget({ user, onClose, onMinimize, position = 0 }: ChatWidg
     return () => {
       unsubscribe()
     }
-  }, [user.id, user.name, user.image, websocket])
+  }, [user.id, user.username, user.image, websocket])
+
+  // Hàm giả lập để lấy tin nhắn cũ hơn
+  const fetchOlderMessages = async (page: number): Promise<Message[]> => {
+    // Giả lập thời gian tải
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    // Trong môi trường thực tế, bạn sẽ gọi API thực sự
+    // return await fetchApi<Message[]>(`/api/messages?userId=${user.id}&page=${page}`)
+
+    // Nếu không còn tin nhắn cũ hơn
+    if (page > 3) {
+      return []
+    }
+
+    // Giả lập dữ liệu cho môi trường phát triển
+    return Array(5)
+      .fill(0)
+      .map((_, index) => ({
+        id: `old-msg-${page}-${index}`,
+        content: `Đây là tin nhắn cũ #${index + 1} từ trang ${page}. Lorem ipsum dolor sit amet.`,
+        timestamp: new Date(Date.now() - 3600000 * 24 * page - 3600000 * index).toISOString(),
+        senderId: index % 2 === 0 ? user.id : "me",
+        recipientId: index % 2 === 0 ? "me" : user.id,
+        ...(index % 2 === 0 && {
+          sender: {
+            id: user.id,
+            username: user.username,
+            image: user.image,
+          },
+        }),
+      }))
+  }
+
+  // Hàm tải thêm tin nhắn cũ
+  const loadOlderMessages = useCallback(async () => {
+    if (isLoadingOlder || !hasOlderMessages) return
+
+    setIsLoadingOlder(true)
+
+    // Lưu chiều cao cuộn hiện tại
+    const scrollContainer = messagesContainerRef.current
+    const scrollHeight = scrollContainer?.scrollHeight || 0
+    setInitialScrollHeight(scrollHeight)
+
+    try {
+      const olderMessages = await fetchOlderMessages(page)
+
+      if (olderMessages.length === 0) {
+        setHasOlderMessages(false)
+      } else {
+        setMessages((prevMessages) => [...olderMessages, ...prevMessages])
+        setPage((prevPage) => prevPage + 1)
+      }
+    } catch (error) {
+      console.error("Error loading older messages:", error)
+    } finally {
+      setIsLoadingOlder(false)
+    }
+  }, [page, isLoadingOlder, hasOlderMessages, user.id, user.username, user.image])
+
+  // Duy trì vị trí cuộn sau khi tải thêm tin nhắn cũ
+  useEffect(() => {
+    if (!isLoadingOlder && initialScrollHeight > 0) {
+      const scrollContainer = messagesContainerRef.current
+      if (scrollContainer) {
+        const newScrollHeight = scrollContainer.scrollHeight
+        const scrollDiff = newScrollHeight - initialScrollHeight
+        scrollContainer.scrollTop = scrollDiff
+      }
+      setInitialScrollHeight(0)
+    }
+  }, [isLoadingOlder, initialScrollHeight])
+
+  // Theo dõi sự kiện cuộn để tải thêm tin nhắn cũ
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollContainer = messagesContainerRef.current
+      if (scrollContainer && scrollContainer.scrollTop === 0 && !isLoadingOlder && hasOlderMessages) {
+        loadOlderMessages()
+      }
+    }
+
+    const scrollContainer = messagesContainerRef.current
+    if (scrollContainer) {
+      scrollContainer.addEventListener("scroll", handleScroll)
+    }
+
+    return () => {
+      if (scrollContainer) {
+        scrollContainer.removeEventListener("scroll", handleScroll)
+      }
+    }
+  }, [loadOlderMessages, isLoadingOlder, hasOlderMessages])
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault()
@@ -127,47 +229,88 @@ export function ChatWidget({ user, onClose, onMinimize, position = 0 }: ChatWidg
     }
   }
 
+  const handleCallClick = () => {
+    makeCall(user.id)
+  }
+
+  const handleVideoCallClick = () => {
+    makeVideoCall(user.id)
+  }
+
   return (
     <Card
-      className={`shadow-lg fixed bottom-0 z-50 ${isMinimized ? "h-12" : "h-96"}`}
-      style={{ width: "280px", right: `${position + 16}px` }}
+      className={`shadow-lg fixed bottom-0 z-50 ${isMinimized ? "h-14" : "h-[450px]"}`}
+      style={{ width: "320px", right: `${position + 16}px` }}
     >
       <CardHeader className="p-3 flex flex-row items-center justify-between space-y-0 bg-primary text-primary-foreground">
         <div className="flex items-center space-x-2">
-          <Avatar className="h-6 w-6">
-            <AvatarImage src={user.image || "/placeholder.svg"} alt={user.name} />
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={user.image || "/placeholder.svg"} alt={user.username} />
             <AvatarFallback>
-              {user.name
+              {user.username
                 .split(" ")
                 .map((n) => n[0])
                 .join("")}
             </AvatarFallback>
           </Avatar>
-          <span className="font-medium text-sm">{user.name}</span>
+          <span className="font-medium text-sm">{user.username}</span>
         </div>
         <div className="flex items-center space-x-1">
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 text-primary-foreground hover:bg-primary-foreground/20"
-            onClick={handleMinimize}
+            className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20"
+            onClick={handleCallClick}
           >
-            {isMinimized ? <Maximize2 className="h-3 w-3" /> : <Minimize2 className="h-3 w-3" />}
+            <Phone className="h-4 w-4" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 text-primary-foreground hover:bg-primary-foreground/20"
+            className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20"
+            onClick={handleVideoCallClick}
+          >
+            <Video className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20"
+            onClick={handleMinimize}
+          >
+            {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20"
             onClick={onClose}
           >
-            <X className="h-3 w-3" />
+            <X className="h-4 w-4" />
           </Button>
         </div>
       </CardHeader>
 
       {!isMinimized && (
         <>
-          <CardContent className="p-3 h-[calc(100%-96px)] overflow-y-auto">
+          <CardContent className="p-3 h-[calc(100%-110px)] overflow-y-auto" ref={messagesContainerRef}>
+            {/* Loading indicator for older messages */}
+            {isLoadingOlder && (
+              <div className="flex justify-center py-2 mb-2">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              </div>
+            )}
+
+            {/* "No more messages" indicator */}
+            {!isLoadingOlder && !hasOlderMessages && messages.length > 0 && (
+              <div className="text-center py-2 mb-2">
+                <span className="text-xs text-muted-foreground">Không còn tin nhắn cũ hơn</span>
+              </div>
+            )}
+
+            {/* Reference for the start of messages */}
+            <div ref={messagesStartRef} />
+
             <div className="space-y-4">
               {messages.map((message) => (
                 <ChatMessage key={message.id} message={message} isCurrentUser={message.senderId === "me"} />
@@ -178,21 +321,21 @@ export function ChatWidget({ user, onClose, onMinimize, position = 0 }: ChatWidg
           <Separator />
           <CardFooter className="p-3">
             <form onSubmit={handleSendMessage} className="flex items-center w-full gap-2">
-              <Button type="button" variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
-                <Paperclip className="h-4 w-4" />
+              <Button type="button" variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0">
+                <Paperclip className="h-5 w-5" />
               </Button>
-              <Button type="button" variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
-                <ImageIcon className="h-4 w-4" />
+              <Button type="button" variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0">
+                <ImageIcon className="h-5 w-5" />
               </Button>
               <Input
                 type="text"
                 placeholder="Nhập tin nhắn..."
-                className="h-8 flex-1"
+                className="h-9 flex-1 text-sm"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
               />
-              <Button type="submit" size="icon" className="h-8 w-8 flex-shrink-0">
-                <Send className="h-4 w-4" />
+              <Button type="submit" size="icon" className="h-9 w-9 flex-shrink-0">
+                <Send className="h-5 w-5" />
               </Button>
             </form>
           </CardFooter>

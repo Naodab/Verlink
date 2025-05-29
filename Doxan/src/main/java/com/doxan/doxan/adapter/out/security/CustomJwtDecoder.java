@@ -19,7 +19,7 @@ public class CustomJwtDecoder implements JwtDecoder {
     private final AuthenticationService authenticationService;
 
     public CustomJwtDecoder(final AuthenticationService authenticationService,
-                            @Value("${DOXAN_SIGNER_KEY}") String signerKey) {
+                            @Value("${jwt.signerKey}") String signerKey) {
         this.authenticationService = authenticationService;
         this.signerKey = signerKey;
     }
