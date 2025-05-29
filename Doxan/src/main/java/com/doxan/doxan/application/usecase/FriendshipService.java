@@ -18,7 +18,7 @@ import com.doxan.doxan.domain.model.enums.NotificationType;
 import com.doxan.doxan.domain.port.in.FriendshipUseCase;
 import com.doxan.doxan.domain.port.out.FriendshipRepositoryPort;
 import com.doxan.doxan.domain.port.out.NotificationRepositoryPort;
-import com.doxan.doxan.domain.port.out.NotificationSender;
+import com.doxan.doxan.domain.port.out.event.NotificationSender;
 import com.doxan.doxan.domain.port.out.UserRepositoryPort;
 import com.doxan.doxan.domain.predefined.UrlPredefined;
 import org.springframework.stereotype.Service;

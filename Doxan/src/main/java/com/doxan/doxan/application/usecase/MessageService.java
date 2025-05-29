@@ -15,6 +15,7 @@ import com.doxan.doxan.domain.model.enums.MediaTargetType;
 import com.doxan.doxan.domain.model.enums.MessageStatus;
 import com.doxan.doxan.domain.port.in.MessageUseCase;
 import com.doxan.doxan.domain.port.out.*;
+import com.doxan.doxan.domain.port.out.event.MessageSender;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;

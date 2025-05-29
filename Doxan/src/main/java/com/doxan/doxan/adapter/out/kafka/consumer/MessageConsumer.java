@@ -22,7 +22,7 @@ public class MessageConsumer {
     }
 
     @KafkaListener(
-            topics = "messages",
+            topics = "${spring.bootstrap-servers.topics.message}",
             groupId = "message-group",
             containerFactory = "messageKafkaListenerContainerFactory"
     )

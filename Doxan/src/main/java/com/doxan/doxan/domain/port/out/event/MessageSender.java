@@ -1,4 +1,4 @@
-package com.doxan.doxan.domain.port.out;
+package com.doxan.doxan.domain.port.out.event;
 
 import com.doxan.doxan.domain.dto.response.message.MessageResponse;
 

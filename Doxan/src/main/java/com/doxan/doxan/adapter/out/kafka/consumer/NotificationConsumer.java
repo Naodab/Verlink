@@ -1,6 +1,5 @@
 package com.doxan.doxan.adapter.out.kafka.consumer;
 
-import com.doxan.doxan.adapter.out.kafka.adapter.KafkaTopic;
 import com.doxan.doxan.adapter.out.websocket.WebSocketSessionManager;
 import com.doxan.doxan.adapter.out.websocket.dto.WebSocketResponse;
 import com.doxan.doxan.adapter.out.websocket.dto.WebSocketResponseType;
@@ -23,7 +22,7 @@ public class NotificationConsumer {
     }
 
     @KafkaListener(
-            topics = "notifications",
+            topics = "${spring.bootstrap-servers.topics.notification}",
             groupId = "notification-group",
             containerFactory = "notificationKafkaListenerContainerFactory"
     )
