@@ -34,6 +34,11 @@ public class ConversationRepositoryAdapter implements ConversationRepositoryPort
     }
 
     @Override
+    public boolean existsById(String id) {
+        return jpaConversationRepository.existsById(id);
+}
+
+    @Override
     public void delete(String id) {
         jpaConversationRepository.deleteById(id);
     }
@@ -41,6 +46,6 @@ public class ConversationRepositoryAdapter implements ConversationRepositoryPort
     @Override
     public List<Conversation> findByIdsAndType(List<String> ids, ConversationType type, int offset, int limit) {
         return jpaConversationRepository.findByIdsAndType(ids, type, offset, limit).stream()
-                .map(conversationMapper::toDomain).collect(Collectors.toList());
+                .map(conversationMapper::toDomain).toList();
     }
 }

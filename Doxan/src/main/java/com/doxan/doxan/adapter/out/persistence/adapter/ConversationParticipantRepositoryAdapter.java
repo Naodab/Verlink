@@ -9,14 +9,14 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Component
 public class ConversationParticipantRepositoryAdapter implements ConversationParticipantRepositoryPort {
     private final JpaConversationParticipantRepository jpaConversationParticipantRepository;
     private final ConversationParticipantMapper conversationParticipantMapper;
 
-    public ConversationParticipantRepositoryAdapter(final JpaConversationParticipantRepository jpaConversationParticipantRepository,
+    public ConversationParticipantRepositoryAdapter(final JpaConversationParticipantRepository
+                                                            jpaConversationParticipantRepository,
                                                     final ConversationParticipantMapper conversationParticipantMapper) {
         this.jpaConversationParticipantRepository = jpaConversationParticipantRepository;
         this.conversationParticipantMapper = conversationParticipantMapper;
@@ -30,17 +30,22 @@ public class ConversationParticipantRepositoryAdapter implements ConversationPar
 
     @Override
     public Optional<ConversationParticipant> findById(String userId, String conversationId) {
-        return jpaConversationParticipantRepository.findById(JpaConversationParticipantEntityId.builder()
-                        .userId(userId)
-                        .conversationId(conversationId)
-                        .build())
+        return jpaConversationParticipantRepository.findById(userId, conversationId)
                 .map(conversationParticipantMapper::toDomain);
     }
 
     @Override
     public List<ConversationParticipant> findByConversationId(String conversationId) {
         return jpaConversationParticipantRepository.findByConversationId(conversationId)
-                .stream().map(conversationParticipantMapper::toDomain).collect(Collectors.toList());
+                .stream().map(conversationParticipantMapper::toDomain).toList();
+    }
+
+    @Override
+    public boolean existsById(String userId, String conversationId) {
+        return jpaConversationParticipantRepository.existsById(JpaConversationParticipantEntityId.builder()
+                        .userId(userId)
+                        .conversationId(conversationId)
+                .build());
     }
 
     @Override

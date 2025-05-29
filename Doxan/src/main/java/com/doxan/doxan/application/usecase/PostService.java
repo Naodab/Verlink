@@ -2,8 +2,10 @@ package com.doxan.doxan.application.usecase;
 
 import com.doxan.doxan.domain.dto.mapper.MediaDTOMapper;
 import com.doxan.doxan.domain.dto.mapper.PostDTOMapper;
+import com.doxan.doxan.domain.dto.request.UploadFileRequest;
 import com.doxan.doxan.domain.dto.request.post.PostCreateRequest;
 import com.doxan.doxan.domain.dto.request.post.PostUpdateRequest;
+import com.doxan.doxan.domain.dto.response.UploadFileResponse;
 import com.doxan.doxan.domain.dto.response.media.MediaResponse;
 import com.doxan.doxan.domain.dto.response.post.PostResponse;
 import com.doxan.doxan.domain.exception.AppException;
@@ -40,6 +42,7 @@ public class PostService implements PostUseCase {
     private final UserRepositoryPort userRepository;
     private final MediaDTOMapper mediaDTOMapper;
     private final MediaService mediaService;
+    private final UploadFileService uploadFileService;
 
     public PostService(final UserRepositoryPort userRepository,
                        final MediaRepositoryPort mediaRepository,
@@ -47,7 +50,8 @@ public class PostService implements PostUseCase {
                        final MediaUploader mediaUploader,
                        final PostDTOMapper postDTOMapper,
                        final MediaDTOMapper mediaDTOMapper,
-                       final MediaService mediaService) {
+                       final MediaService mediaService,
+                       final UploadFileService uploadFileService) {
         this.userRepository = userRepository;
         this.mediaRepository = mediaRepository;
         this.postRepository = postRepository;
@@ -55,6 +59,7 @@ public class PostService implements PostUseCase {
         this.postDTOMapper = postDTOMapper;
         this.mediaDTOMapper = mediaDTOMapper;
         this.mediaService = mediaService;
+        this.uploadFileService = uploadFileService;
     }
 
     @Override
@@ -71,26 +76,15 @@ public class PostService implements PostUseCase {
                 .visibility(request.getVisibility())
                 .build();
         post = postRepository.save(post);
-        String finalPostId = post.getId();
         PostResponse postResponse = postDTOMapper.toResponse(post);
-        if (!request.getImages().isEmpty()) {
-            postResponse.setImages(request.getImages().stream()
-                    .map(image -> mediaDTOMapper.toResponse(mediaRepository.save(
-                            mediaUploader.upload(image, finalPostId, MediaTargetType.POST))
-                    )).toList());
-        }
-        if (!request.getVideos().isEmpty()) {
-            postResponse.setVideos(request.getVideos().stream()
-                    .map(video -> mediaDTOMapper.toResponse(mediaRepository.save(
-                            mediaUploader.upload(video, finalPostId, MediaTargetType.POST))
-                    )).toList());
-        }
-        if (!request.getDocs().isEmpty()) {
-            postResponse.setDocs(request.getDocs().stream()
-                    .map(doc -> mediaDTOMapper.toResponse(mediaRepository.save(
-                            mediaUploader.upload(doc, finalPostId, MediaTargetType.POST))
-                    )).toList());
-        }
+        UploadFileResponse uploadFileResponse = uploadFileService.uploadFile(post.getId(), UploadFileRequest.builder()
+                        .images(request.getImages())
+                        .docs(request.getDocs())
+                        .videos(request.getVideos())
+                .build(), MediaTargetType.POST);
+        postResponse.setImages(uploadFileResponse.getImages());
+        postResponse.setDocs(uploadFileResponse.getDocs());
+        postResponse.setVideos(uploadFileResponse.getVideos());
         return postResponse;
     }
 

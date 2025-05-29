@@ -1,5 +1,7 @@
-package com.doxan.doxan.adapter.out.websocket;
+package com.doxan.doxan.adapter.out.kafka.consumer;
 
+import com.doxan.doxan.adapter.out.kafka.adapter.KafkaTopic;
+import com.doxan.doxan.adapter.out.websocket.WebSocketSessionManager;
 import com.doxan.doxan.adapter.out.websocket.dto.WebSocketResponse;
 import com.doxan.doxan.adapter.out.websocket.dto.WebSocketResponseType;
 import com.doxan.doxan.domain.model.Notification;
@@ -13,10 +15,10 @@ import org.springframework.web.socket.WebSocketSession;
 
 @Slf4j
 @Component
-public class KafkaListenerAdapter {
+public class NotificationConsumer {
     private final ObjectMapper objectMapper;
 
-    public KafkaListenerAdapter(final ObjectMapper objectMapper) {
+    public NotificationConsumer(final ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
@@ -34,6 +36,7 @@ public class KafkaListenerAdapter {
             try {
                 String payload = objectMapper.writeValueAsString(WebSocketResponse.<Notification>builder()
                                 .type(WebSocketResponseType.NOTIFICATION.toString())
+                                .message(notification.getContent())
                                 .data(notification)
                                 .build());
                 session.sendMessage(new TextMessage(payload));

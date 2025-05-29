@@ -1,4 +1,4 @@
-package com.doxan.doxan.adapter.out.kafka;
+package com.doxan.doxan.adapter.out.kafka.adapter;
 
 import com.doxan.doxan.domain.model.Notification;
 import com.doxan.doxan.domain.port.out.NotificationSender;
@@ -15,6 +15,6 @@ public class KafkaNotificationAdapter implements NotificationSender {
 
     @Override
     public void sendFriendRequestNotification(Notification notification) {
-        kafkaTemplate.send("notifications", notification.getRecipient().getId(), notification);
+        kafkaTemplate.send(KafkaTopic.NOTIFICATIONS.toString(), notification.getRecipient().getId(), notification);
     }
 }

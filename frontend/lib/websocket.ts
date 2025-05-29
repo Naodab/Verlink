@@ -1,7 +1,7 @@
 let instance: WebSocketService | null = null
 
 type WebSocketListener = (data: any) => void
-type WebSocketEvent = "auth" | "message" | "notification" | "call" | "video-call" | "call_ended"
+type WebSocketEvent = "auth" | "message" | "notification" | "call" | "video-call" | "call-ended"
 
 export class WebSocketService {
   private ws: WebSocket | null = null

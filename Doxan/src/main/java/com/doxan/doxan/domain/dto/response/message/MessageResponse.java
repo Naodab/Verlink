@@ -1,9 +1,9 @@
-package com.doxan.doxan.domain.dto.response.post;
+package com.doxan.doxan.domain.dto.response.message;
 
 import com.doxan.doxan.domain.dto.response.media.MediaResponse;
-import com.doxan.doxan.domain.dto.response.user.SubUserResponse;
+import com.doxan.doxan.domain.dto.response.user.ParticipantConversationResponse;
+import com.doxan.doxan.domain.model.enums.MessageStatus;
 import com.doxan.doxan.domain.model.enums.ReactionType;
-import com.doxan.doxan.domain.model.enums.Visibility;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -17,16 +17,15 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class PostResponse {
+public class MessageResponse {
     String id;
-    SubUserResponse author;
+    String conversationId;
     String content;
-    Visibility visibility;
     LocalDateTime createdAt;
-    LocalDateTime updatedAt;
+    MessageStatus status;
+    ParticipantConversationResponse sender;
+    List<ParticipantConversationResponse> recipients;
     Map<ReactionType, Long> reactionCounts;
-    boolean edited;
-    int shareCount;
     List<MediaResponse> images;
     List<MediaResponse> videos;
     List<MediaResponse> docs;

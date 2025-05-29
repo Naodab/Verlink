@@ -46,7 +46,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       const handleNotification = (data: any) => {
         alert("Notification received")
         if (data.type === "notification") {
-          alert("Notification data: " + JSON.stringify(data))
+          console.log("Notification data: " + JSON.stringify(data))
           const newNotification: Notification = {
             id: data.id,
             content: data.content,

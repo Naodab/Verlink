@@ -262,32 +262,33 @@ public class UserRepositoryAdapter implements UserRepositoryPort {
 
     @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     protected Optional<User> findUserByIdFromDb(String id) {
-        String key = USER_PREFIX_REDIS + id;
-        return jpaUserRepository.findById(id)
-            .map(userMapper::toDomain)
-            .map(user -> {
-                if (cacheEnabled) {
-                    try {
-                        List<String> keys = List.of(
-                                key,
-                                EMAIL_SET,
-                                PHONE_SET
-                        );
-
-                        List<String> args = List.of(
-                                serializeUser(user),
-                                String.valueOf(userTTL),
-                                user.getEmail(),
-                                user.getPhone()
-                        );
-
-                        redisTemplate.execute(atomicUpdateScript, keys, args.toArray());
-                    } catch (Exception e) {
-                        log.warn("Failed to update Redis cache for user {}", id, e);
-                    }
-                }
-                return user;
-            });
+//        String key = USER_PREFIX_REDIS + id;
+//        return jpaUserRepository.findById(id)
+//            .map(userMapper::toDomain)
+//            .map(user -> {
+//                if (cacheEnabled) {
+//                    try {
+//                        List<String> keys = List.of(
+//                                key,
+//                                EMAIL_SET,
+//                                PHONE_SET
+//                        );
+//
+//                        List<String> args = List.of(
+//                                serializeUser(user),
+//                                String.valueOf(userTTL),
+//                                user.getEmail(),
+//                                user.getPhone()
+//                        );
+//
+//                        redisTemplate.execute(atomicUpdateScript, keys, args.toArray());
+//                    } catch (Exception e) {
+//                        log.warn("Failed to update Redis cache for user {}", id, e);
+//                    }
+//                }
+//                return user;
+//            });
+        return jpaUserRepository.findById(id).map(userMapper::toDomain);
     }
 
     private String serializeUser(User user) {

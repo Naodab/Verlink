@@ -2,10 +2,12 @@ package com.doxan.doxan.adapter.out.persistence.repository;
 
 import com.doxan.doxan.adapter.out.persistence.entity.JpaConversationParticipantEntity;
 import com.doxan.doxan.adapter.out.persistence.entity.JpaConversationParticipantEntityId;
+import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface JpaConversationParticipantRepository extends
         JpaRepository<JpaConversationParticipantEntity, JpaConversationParticipantEntityId> {
@@ -14,4 +16,8 @@ public interface JpaConversationParticipantRepository extends
 
     @Query("SELECT COUNT(cp) FROM conversation_participants cp WHERE cp.id.conversationId = :conversationId")
     long countConversationParticipantsByConversationId(String conversationId);
+
+    @Query("SELECT cp FROM conversation_participants cp WHERE cp.id.userId = :userId AND cp.id.conversationId = :conversationId")
+    Optional<JpaConversationParticipantEntity> findById(@Param("userId") String userId,
+                                                        @Param("conversationId") String conversationId);
 }

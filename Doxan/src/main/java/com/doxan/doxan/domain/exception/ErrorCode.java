@@ -23,6 +23,9 @@ public enum ErrorCode {
 
     MEDIA_NOT_EXISTED(1061, "Media not existed", StatusCode.BAD_REQUEST),
 
+    CONVERSATION_NOT_EXISTED(1071, "Conversation not existed", StatusCode.BAD_REQUEST),
+    USER_NOT_BELONG_TO_CONVERSATION(1072, "User not belong to this conversation", StatusCode.BAD_REQUEST),
+
     UNAUTHENTICATED(1201, "Unauthenticated", StatusCode.UNAUTHENTICATED),
     CONCURRENT_MODIFICATION(2301, "User is updating", StatusCode.BAD_REQUEST),
     DATABASE_ERROR(3301, "Database error" , StatusCode.BAD_REQUEST ),

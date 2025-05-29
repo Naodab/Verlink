@@ -9,6 +9,7 @@ public interface ConversationParticipantRepositoryPort {
     ConversationParticipant save(ConversationParticipant conversationParticipant);
     Optional<ConversationParticipant> findById(String userId, String conversationId);
     List<ConversationParticipant> findByConversationId(String conversationId);
+    boolean existsById(String userId, String conversationId);
     void deleteById(String userId, String conversationId);
     long countByConversationId(String conversationId);
 }

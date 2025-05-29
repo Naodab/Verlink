@@ -9,6 +9,7 @@ import java.util.Optional;
 public interface ConversationRepositoryPort {
     Conversation save(Conversation conversation);
     Optional<Conversation> findById(String id);
+    boolean existsById(String id);
     void delete(String id);
     List<Conversation> findByIdsAndType(List<String> ids, ConversationType type, int offset, int limit);
 }
