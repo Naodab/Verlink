@@ -35,4 +35,6 @@ public class JpaNotificationEntity {
 
     @Column(name = "create_at")
     LocalDateTime createdAt;
+
+    String url;
 }

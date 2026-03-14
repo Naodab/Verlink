@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { AlertCircle, ArrowLeft, CheckCircle2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
@@ -49,13 +48,29 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
-      </div>
+      <div className="absolute top-4 right-4"></div>
 
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md animate-fade-in">
-          <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_center,rgba(245,229,61,0.15),transparent_70%)]"></div>
+          <div className="absolute inset-0 -z-10">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(245,229,61,0.15),transparent_70%)]"></div>
+            {Array.from({ length: 50 }).map((_, i) => (
+              <div
+                key={i}
+                className="absolute rounded-full bg-white star"
+                style={
+                  {
+                    width: Math.random() * 2 + 1 + "px",
+                    height: Math.random() * 2 + 1 + "px",
+                    top: Math.random() * 100 + "%",
+                    left: Math.random() * 100 + "%",
+                    opacity: Math.random() * 0.5 + 0.2,
+                    "--delay": Math.random() * 5,
+                  } as React.CSSProperties
+                }
+              />
+            ))}
+          </div>
 
           <Card className="w-full max-w-md glass-effect">
             <CardHeader className="space-y-1">

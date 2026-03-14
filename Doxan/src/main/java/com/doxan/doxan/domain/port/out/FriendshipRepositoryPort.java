@@ -17,4 +17,5 @@ public interface FriendshipRepositoryPort {
     List<String> getCommonFriendIds(String userA, String userB, int offset, int limit);
     long countFriendshipsByUserId(String userId);
     long countNumberOfCommonFriends(String userA, String userB);
+    boolean existsById(String requesterId, String accepterId);
 }

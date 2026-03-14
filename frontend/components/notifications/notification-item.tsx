@@ -2,30 +2,41 @@
 
 import { formatDistance } from "date-fns"
 import { vi } from "date-fns/locale"
-import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { X } from "lucide-react"
+import { X, MessageSquare, Heart, UserPlus, Bell } from "lucide-react"
 import type { Notification } from "./notification-provider"
+import { useNotifications } from "./notification-provider"
 
 interface NotificationItemProps {
   notification: Notification
-  onMarkAsRead: (id: string) => void
   onClear: (id: string) => void
 }
 
-export function NotificationItem({ notification, onMarkAsRead, onClear }: NotificationItemProps) {
+// Hàm để lấy icon dựa trên loại thông báo
+const getNotificationIcon = (type?: string) => {
+  switch (type) {
+    case "reaction":
+      return <Heart className="h-4 w-4 text-red-500" />
+    case "comment":
+      return <MessageSquare className="h-4 w-4 text-blue-500" />
+    case "friendRequest":
+      return <UserPlus className="h-4 w-4 text-green-500" />
+    case "message":
+      return <MessageSquare className="h-4 w-4 text-purple-500" />
+    default:
+      return <Bell className="h-4 w-4 text-primary" />
+  }
+}
+
+export function NotificationItem({ notification, onClear }: NotificationItemProps) {
+  const { handleNotificationClick } = useNotifications()
+
   const formattedTime = formatDistance(new Date(notification.timestamp), new Date(), {
     addSuffix: true,
     locale: vi,
   })
-
-  const handleClick = () => {
-    if (!notification.read) {
-      onMarkAsRead(notification.id)
-    }
-  }
 
   return (
     <Card
@@ -33,7 +44,7 @@ export function NotificationItem({ notification, onMarkAsRead, onClear }: Notifi
         notification.read ? "bg-background" : "bg-primary/5 dark:bg-primary/10"
       } hover:bg-accent transition-colors`}
     >
-      <Link href={notification.link} onClick={handleClick} className="block">
+      <div className="block cursor-pointer" onClick={() => handleNotificationClick(notification)}>
         <div className="flex items-start gap-3">
           {notification.user && (
             <Avatar className="h-10 w-10">
@@ -47,11 +58,14 @@ export function NotificationItem({ notification, onMarkAsRead, onClear }: Notifi
             </Avatar>
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-sm">{notification.content}</p>
-            <p className="text-xs text-muted-foreground mt-1">{formattedTime}</p>
+            <div className="flex items-center gap-1 mb-1">
+              {getNotificationIcon(notification.notificationType)}
+              <p className="text-sm">{notification.content}</p>
+            </div>
+            <p className="text-xs text-muted-foreground">{formattedTime}</p>
           </div>
         </div>
-      </Link>
+      </div>
       <Button
         variant="ghost"
         size="icon"

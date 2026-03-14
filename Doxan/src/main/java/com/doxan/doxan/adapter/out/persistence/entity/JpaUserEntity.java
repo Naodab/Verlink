@@ -1,5 +1,6 @@
 package com.doxan.doxan.adapter.out.persistence.entity;
 
+import com.doxan.doxan.domain.model.enums.ActivityState;
 import com.doxan.doxan.domain.model.enums.Gender;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
@@ -47,6 +48,12 @@ public class JpaUserEntity {
 
     @OneToOne(cascade = CascadeType.ALL)
     JpaLocationEntity location;
+
+    @Column(name = "activity_state")
+    ActivityState activityState;
+
+    @Builder.Default
+    boolean activate = true;
 
     @ManyToMany
     @JoinTable(

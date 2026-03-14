@@ -16,11 +16,15 @@ public enum ErrorCode {
     USER_NOT_EXISTED(1032, "User not existed", StatusCode.BAD_REQUEST),
 
     FRIENDSHIP_NOT_EXISTED(1041, "Friendship not existed", StatusCode.BAD_REQUEST),
+    FRIENDSHIP_EXISTED(1042, "Friendship existed", StatusCode.BAD_REQUEST),
 
     POST_NOT_EXISTED(1051, "Post not existed", StatusCode.BAD_REQUEST),
     POST_EDITING_NOT_PERMITTED(1052, "User don't have permission to edit this post", StatusCode.BAD_REQUEST),
 
     MEDIA_NOT_EXISTED(1061, "Media not existed", StatusCode.BAD_REQUEST),
+
+    CONVERSATION_NOT_EXISTED(1071, "Conversation not existed", StatusCode.BAD_REQUEST),
+    USER_NOT_BELONG_TO_CONVERSATION(1072, "User not belong to this conversation", StatusCode.BAD_REQUEST),
 
     UNAUTHENTICATED(1201, "Unauthenticated", StatusCode.UNAUTHENTICATED),
     CONCURRENT_MODIFICATION(2301, "User is updating", StatusCode.BAD_REQUEST),

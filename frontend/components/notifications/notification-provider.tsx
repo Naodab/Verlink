@@ -5,13 +5,16 @@ import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
 import { getWebSocketService } from "@/lib/websocket"
 import { useToast } from "@/components/ui/use-toast"
+import { useRouter } from "next/navigation"
 
 export interface Notification {
   id: string
   content: string
   timestamp: string
   read: boolean
-  link: string
+  url: string
+  notificationType?: "reaction" | "comment" | "friendRequest" | "message" | "other"
+  postId?: string
   user?: {
     id: number | string
     name: string
@@ -25,6 +28,7 @@ interface NotificationContextType {
   markAsRead: (id: string) => void
   markAllAsRead: () => void
   clearNotification: (id: string) => void
+  handleNotificationClick: (notification: Notification) => void
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined)
@@ -32,27 +36,30 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const { toast } = useToast()
+  const router = useRouter()
 
   useEffect(() => {
-    // Đảm bảo code chỉ chạy ở phía client
     if (typeof window !== "undefined") {
       const websocket = getWebSocketService()
       websocket.connect()
 
       const handleNotification = (data: any) => {
+        alert("Notification received")
         if (data.type === "notification") {
+          console.log("Notification data: " + JSON.stringify(data))
           const newNotification: Notification = {
             id: data.id,
             content: data.content,
             timestamp: data.timestamp,
             read: data.read || false,
-            link: data.link || "#",
+            url: data.link || "#",
+            notificationType: data.notificationType || "other",
+            postId: data.postId,
             user: data.user,
           }
 
           setNotifications((prev) => [newNotification, ...prev])
 
-          // Show toast for new notification
           toast({
             title: "Thông báo mới",
             description: data.content,
@@ -93,6 +100,30 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     setNotifications((prev) => prev.filter((notification) => notification.id !== id))
   }
 
+  const handleNotificationClick = (notification: Notification) => {
+    markAsRead(notification.id)
+
+    switch (notification.notificationType) {
+      case "reaction":
+      case "comment":
+        if (notification.postId) {
+          router.push(`/post/${notification.postId}`)
+        } else {
+          router.push(notification.url)
+        }
+        break
+      case "friendRequest":
+        router.push("/friends/requests")
+        break
+      case "message":
+        router.push(`/messages?userId=${notification.user?.id}`)
+        break
+      default:
+        router.push(notification.url)
+        break
+    }
+  }
+
   return (
     <NotificationContext.Provider
       value={{
@@ -101,6 +132,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         markAsRead,
         markAllAsRead,
         clearNotification,
+        handleNotificationClick,
       }}
     >
       {children}

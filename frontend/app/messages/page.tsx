@@ -12,12 +12,15 @@ import { Separator } from "@/components/ui/separator"
 import { Search, MessageSquare, Edit, Phone, Video, ImageIcon } from "lucide-react"
 import { getWebSocketService } from "@/lib/websocket"
 import { ChatWidget } from "@/components/chat/chat-widget"
+import { useCall } from "@/components/call/call-provider"
 
 // Mock data for contacts
 const CONTACTS = [
   {
     id: 1,
-    name: "Anna Nguyễn",
+    username: "anna_nguyen",
+    firstName: "Anna",
+    lastName: "Nguyễn",
     image: "/placeholder.svg?height=40&width=40&text=AN",
     lastMessage: "Hẹn gặp bạn vào cuối tuần nhé!",
     timestamp: "10:30",
@@ -26,7 +29,9 @@ const CONTACTS = [
   },
   {
     id: 2,
-    name: "Minh Trần",
+    username: "minh_tran",
+    firstName: "Minh",
+    lastName: "Trần",
     image: "/placeholder.svg?height=40&width=40&text=MT",
     lastMessage: "Bạn đã xem bài viết mới của tôi chưa?",
     timestamp: "Hôm qua",
@@ -35,7 +40,9 @@ const CONTACTS = [
   },
   {
     id: 3,
-    name: "Hương Lê",
+    username: "huong_le",
+    firstName: "Hương",
+    lastName: "Lê",
     image: "/placeholder.svg?height=40&width=40&text=HL",
     lastMessage: "Cảm ơn bạn rất nhiều!",
     timestamp: "Thứ 2",
@@ -44,7 +51,9 @@ const CONTACTS = [
   },
   {
     id: 4,
-    name: "Tuấn Phạm",
+    username: "tuan_pham",
+    firstName: "Tuấn",
+    lastName: "Phạm",
     image: "/placeholder.svg?height=40&width=40&text=TP",
     lastMessage: "Dự án đang tiến triển tốt.",
     timestamp: "15/04",
@@ -53,7 +62,9 @@ const CONTACTS = [
   },
   {
     id: 5,
-    name: "Linh Đặng",
+    username: "linh_dang",
+    firstName: "Linh",
+    lastName: "Đặng",
     image: "/placeholder.svg?height=40&width=40&text=LD",
     lastMessage: "Bạn có rảnh không? Tôi cần hỏi một chút.",
     timestamp: "12/04",
@@ -69,6 +80,7 @@ export default function MessagesPage() {
   const [activeChat, setActiveChat] = useState<number | null>(null)
   const [openChats, setOpenChats] = useState<number[]>([])
   const [onlineUsers, setOnlineUsers] = useState<Record<number, boolean>>({})
+  const { makeCall, makeVideoCall } = useCall()
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -100,7 +112,8 @@ export default function MessagesPage() {
 
   const filteredContacts = CONTACTS.filter(
     (contact) =>
-      contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      contact.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      `${contact.firstName} ${contact.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
       contact.lastMessage.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
@@ -116,6 +129,14 @@ export default function MessagesPage() {
     if (activeChat === contactId) {
       setActiveChat(null)
     }
+  }
+
+  const handleCallClick = (contactId: number) => {
+    makeCall(contactId)
+  }
+
+  const handleVideoCallClick = (contactId: number) => {
+    makeVideoCall(contactId)
   }
 
   if (isLoading) {
@@ -177,12 +198,10 @@ export default function MessagesPage() {
                     >
                       <div className="relative">
                         <Avatar className="h-10 w-10">
-                          <AvatarImage src={contact.image || "/placeholder.svg"} alt={contact.name} />
+                          <AvatarImage src={contact.image || "/placeholder.svg"} alt={contact.username} />
                           <AvatarFallback>
-                            {contact.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
+                            {contact.firstName.charAt(0)}
+                            {contact.lastName.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
                         {(contact.online || onlineUsers[contact.id]) && (
@@ -191,7 +210,9 @@ export default function MessagesPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-center">
-                          <h3 className="font-medium text-sm truncate">{contact.name}</h3>
+                          <h3 className="font-medium text-sm truncate">
+                            {contact.firstName} {contact.lastName}
+                          </h3>
                           <span className="text-xs text-muted-foreground">{contact.timestamp}</span>
                         </div>
                         <p className="text-xs text-muted-foreground truncate">{contact.lastMessage}</p>
@@ -224,17 +245,17 @@ export default function MessagesPage() {
                             <Avatar className="h-10 w-10">
                               <AvatarImage
                                 src={selectedContact.image || "/placeholder.svg"}
-                                alt={selectedContact.name}
+                                alt={selectedContact.username}
                               />
                               <AvatarFallback>
-                                {selectedContact.name
-                                  .split(" ")
-                                  .map((n) => n[0])
-                                  .join("")}
+                                {selectedContact.firstName.charAt(0)}
+                                {selectedContact.lastName.charAt(0)}
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <h3 className="font-medium">{selectedContact.name}</h3>
+                              <h3 className="font-medium">
+                                {selectedContact.firstName} {selectedContact.lastName}
+                              </h3>
                               <p className="text-xs text-muted-foreground">
                                 {selectedContact.online || onlineUsers[selectedContact.id]
                                   ? "Đang hoạt động"
@@ -243,10 +264,14 @@ export default function MessagesPage() {
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" onClick={() => handleCallClick(selectedContact.id)}>
                               <Phone className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleVideoCallClick(selectedContact.id)}
+                            >
                               <Video className="h-4 w-4" />
                             </Button>
                           </div>
@@ -265,13 +290,11 @@ export default function MessagesPage() {
                                 <Avatar className="h-8 w-8">
                                   <AvatarImage
                                     src={selectedContact.image || "/placeholder.svg"}
-                                    alt={selectedContact.name}
+                                    alt={selectedContact.username}
                                   />
                                   <AvatarFallback>
-                                    {selectedContact.name
-                                      .split(" ")
-                                      .map((n) => n[0])
-                                      .join("")}
+                                    {selectedContact.firstName.charAt(0)}
+                                    {selectedContact.lastName.charAt(0)}
                                   </AvatarFallback>
                                 </Avatar>
                                 <div className="flex flex-col">
@@ -293,13 +316,11 @@ export default function MessagesPage() {
                                 <Avatar className="h-8 w-8">
                                   <AvatarImage
                                     src={selectedContact.image || "/placeholder.svg"}
-                                    alt={selectedContact.name}
+                                    alt={selectedContact.username}
                                   />
                                   <AvatarFallback>
-                                    {selectedContact.name
-                                      .split(" ")
-                                      .map((n) => n[0])
-                                      .join("")}
+                                    {selectedContact.firstName.charAt(0)}
+                                    {selectedContact.lastName.charAt(0)}
                                   </AvatarFallback>
                                 </Avatar>
                                 <div className="flex flex-col">
@@ -353,7 +374,7 @@ export default function MessagesPage() {
                 <ChatWidget
                   user={{
                     id: contact.id,
-                    name: contact.name,
+                    username: contact.username,
                     image: contact.image,
                   }}
                   onClose={() => handleCloseChat(chatId)}

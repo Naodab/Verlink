@@ -15,7 +15,7 @@ import java.io.Serializable;
 @AllArgsConstructor
 @EqualsAndHashCode
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class BlockRelationshipId implements Serializable {
+public class JpaBlockRelationshipEntityId implements Serializable {
     @Column(name = "blocker_id", nullable = false)
     String blockerId;
 

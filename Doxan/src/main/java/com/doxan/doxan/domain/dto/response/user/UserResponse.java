@@ -1,6 +1,7 @@
 package com.doxan.doxan.domain.dto.response.user;
 
 import com.doxan.doxan.domain.dto.response.media.MediaResponse;
+import com.doxan.doxan.domain.model.enums.ActivityState;
 import com.doxan.doxan.domain.model.enums.Gender;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -21,9 +22,11 @@ public class UserResponse {
     String firstName;
     String lastName;
     String phone;
+    boolean activate;
     LocationResponse location;
     Gender gender;
     LocalDate dob;
+    ActivityState activityState;
     LocalDateTime createdAt;
     MediaResponse profileImage;
     MediaResponse coverImage;

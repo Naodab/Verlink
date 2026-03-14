@@ -1,7 +1,7 @@
 package com.doxan.doxan.domain.dto.response.post;
 
 import com.doxan.doxan.domain.dto.response.media.MediaResponse;
-import com.doxan.doxan.domain.dto.response.user.UserResponse;
+import com.doxan.doxan.domain.dto.response.user.SubUserResponse;
 import com.doxan.doxan.domain.model.enums.ReactionType;
 import com.doxan.doxan.domain.model.enums.Visibility;
 import lombok.*;
@@ -19,7 +19,7 @@ import java.util.Map;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PostResponse {
     String id;
-    UserResponse user;
+    SubUserResponse author;
     String content;
     Visibility visibility;
     LocalDateTime createdAt;
@@ -27,5 +27,7 @@ public class PostResponse {
     Map<ReactionType, Long> reactionCounts;
     boolean edited;
     int shareCount;
-    List<MediaResponse> medias;
+    List<MediaResponse> images;
+    List<MediaResponse> videos;
+    List<MediaResponse> docs;
 }

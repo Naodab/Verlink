@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Getter
@@ -17,7 +16,7 @@ import java.time.LocalDateTime;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class JpaBlockRelationshipEntity {
     @EmbeddedId
-    BlockRelationshipId id;
+    JpaBlockRelationshipEntityId id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "blocker_id", insertable = false, updatable = false)

@@ -1,279 +1,144 @@
-const isClient = typeof window !== "undefined"
+let instance: WebSocketService | null = null
 
-// Utility để xử lý kết nối websocket
+type WebSocketListener = (data: any) => void
+type WebSocketEvent = "auth" | "message" | "notification" | "call" | "video-call" | "call-ended"
 
-type WebSocketCallback = (data: any) => void
-
-interface WebSocketHandlers {
-  message: WebSocketCallback[]
-  notification: WebSocketCallback[]
-  status: WebSocketCallback[]
-  error: WebSocketCallback[]
-  open: WebSocketCallback[]
-  close: WebSocketCallback[]
-}
-
-class WebSocketService {
-  private socket: WebSocket | null = null
-  private handlers: WebSocketHandlers = {
-    message: [],
-    notification: [],
-    status: [],
-    error: [],
-    open: [],
-    close: [],
-  }
+export class WebSocketService {
+  private ws: WebSocket | null = null
+  private readonly listeners: Map<WebSocketEvent, WebSocketListener[]> = new Map()
   private reconnectAttempts = 0
-  private maxReconnectAttempts = 5
+  private readonly maxReconnectAttempts = 5
   private reconnectTimeout: NodeJS.Timeout | null = null
-  private url: string
-  private mockMode: boolean
+  private isConnecting = false
 
-  constructor(url: string, mockMode = true) {
-    this.url = url
-    this.mockMode = mockMode
+  constructor() {
+    this.listeners.set("message", [])
+    this.listeners.set("notification", [])
+    this.listeners.set("call", [])
+    this.listeners.set("video-call", [])
+    this.listeners.set("auth", [])
   }
 
   connect() {
-    if (!isClient) return // Không kết nối nếu không phải môi trường client
+    const token = localStorage.getItem("verlink-token")
 
-    if (this.mockMode) {
-      console.log("WebSocket running in mock mode")
-      this.simulateMockConnection()
+    if (!token) {
       return
     }
 
-    try {
-      this.socket = new WebSocket(this.url)
+    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
+      return
+    }
 
-      this.socket.onopen = () => {
-        console.log("WebSocket connection established")
+    if (this.isConnecting) {
+      return
+    }
+
+    this.isConnecting = true
+
+    const wsUrl = process.env.NEXT_PUBLIC_WS_URL ?? "wss://api.verlink.com/ws"
+
+    try {
+      this.ws = new WebSocket(wsUrl)
+
+      this.ws.onopen = () => {
+        console.log("WebSocket connected")
         this.reconnectAttempts = 0
-        this.handlers.open.forEach((callback) => callback({ type: "open" }))
+        this.isConnecting = false
+
+        this.send({
+          type: "auth",
+          token,
+        })
       }
 
-      this.socket.onmessage = (event) => {
+      this.ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data)
-          if (data.type === "message") {
-            this.handlers.message.forEach((callback) => callback(data))
-          } else if (data.type === "notification") {
-            this.handlers.notification.forEach((callback) => callback(data))
-          } else if (data.type === "status") {
-            this.handlers.status.forEach((callback) => callback(data))
+          if (data.type === "auth") {
+            if (!data.success) {
+              console.error("WebSocket authentication failed")
+              this.disconnect()
+              return
+            }
           }
+          const listeners = this.listeners.get(data.type as WebSocketEvent) || []
+          listeners.forEach((listener) => listener(data))
         } catch (error) {
           console.error("Error parsing WebSocket message:", error)
         }
       }
 
-      this.socket.onerror = (error) => {
-        console.error("WebSocket error:", error)
-        this.handlers.error.forEach((callback) => callback({ type: "error", error }))
+      this.ws.onclose = () => {
+        console.log("WebSocket disconnected")
+        this.ws = null
+        this.isConnecting = false
+        this.attemptReconnect()
       }
 
-      this.socket.onclose = (event) => {
-        console.log("WebSocket connection closed:", event.code, event.reason)
-        this.handlers.close.forEach((callback) => callback({ type: "close", code: event.code, reason: event.reason }))
-
-        // Attempt to reconnect if the connection was closed unexpectedly
-        if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
-          this.reconnect()
-        }
+      this.ws.onerror = (error) => {
+        console.error("WebSocket error:", error)
+        this.ws?.close()
       }
     } catch (error) {
-      console.error("Failed to establish WebSocket connection:", error)
+      console.error("Failed to create WebSocket connection:", error)
+      this.isConnecting = false
+      this.attemptReconnect()
     }
   }
 
-  private reconnect() {
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout)
+  private attemptReconnect() {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.log("Max reconnect attempts reached")
+      return
     }
 
-    this.reconnectAttempts++
-    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000)
-
-    console.log(`Attempting to reconnect in ${delay / 1000} seconds...`)
+    const delay = Math.min(1000 * 2 ** this.reconnectAttempts, 30000)
+    console.log(`Attempting to reconnect in ${delay}ms`)
 
     this.reconnectTimeout = setTimeout(() => {
-      console.log(`Reconnecting... Attempt ${this.reconnectAttempts}`)
+      this.reconnectAttempts++
       this.connect()
     }, delay)
   }
 
   disconnect() {
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      this.socket.close(1000, "User initiated disconnect")
-    }
-
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout)
       this.reconnectTimeout = null
     }
 
-    if (this.mockMode) {
-      console.log("Mock WebSocket disconnected")
+    if (this.ws) {
+      this.ws.close()
+      this.ws = null
     }
   }
 
-  on(event: keyof WebSocketHandlers, callback: WebSocketCallback) {
-    if (this.handlers[event]) {
-      this.handlers[event].push(callback)
-    }
-    return () => this.off(event, callback)
-  }
+  on(event: WebSocketEvent, callback: WebSocketListener) {
+    const listeners = this.listeners.get(event) || []
+    listeners.push(callback)
+    this.listeners.set(event, listeners)
 
-  off(event: keyof WebSocketHandlers, callback: WebSocketCallback) {
-    if (this.handlers[event]) {
-      this.handlers[event] = this.handlers[event].filter((cb) => cb !== callback)
+    return () => {
+      const updatedListeners = this.listeners.get(event) || []
+      this.listeners.set(
+        event,
+        updatedListeners.filter((listener) => listener !== callback),
+      )
     }
   }
 
   send(data: any) {
-    if (this.mockMode) {
-      console.log("Mock WebSocket sending:", data)
-      this.handleMockResponse(data)
-      return
-    }
-
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      this.socket.send(JSON.stringify(data))
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(data))
     } else {
-      console.error("WebSocket is not connected")
-    }
-  }
-
-  // Mock functionality for development without a real WebSocket server
-  private simulateMockConnection() {
-    setTimeout(() => {
-      this.handlers.open.forEach((callback) => callback({ type: "open" }))
-
-      // Simulate receiving online status for friends
-      setTimeout(() => {
-        this.handlers.status.forEach((callback) =>
-          callback({
-            type: "status",
-            users: [
-              { id: 1, name: "Anna Nguyễn", status: "online" },
-              { id: 2, name: "Minh Trần", status: "online" },
-              { id: 3, name: "Hương Lê", status: "offline" },
-              { id: 4, name: "Tuấn Phạm", status: "online" },
-              { id: 5, name: "Linh Đặng", status: "offline" },
-            ],
-          }),
-        )
-      }, 1000)
-
-      // Simulate receiving a notification after 3 seconds
-      setTimeout(() => {
-        this.handlers.notification.forEach((callback) =>
-          callback({
-            type: "notification",
-            id: "notif-1",
-            content: "Minh Trần đã bình luận về bài viết của bạn",
-            timestamp: new Date().toISOString(),
-            read: false,
-            link: "/feed",
-            user: {
-              id: 2,
-              name: "Minh Trần",
-              image: "/placeholder.svg?height=40&width=40&text=MT",
-            },
-          }),
-        )
-      }, 3000)
-
-      // Simulate receiving another notification after 7 seconds
-      setTimeout(() => {
-        this.handlers.notification.forEach((callback) =>
-          callback({
-            type: "notification",
-            id: "notif-2",
-            content: "Anna Nguyễn đã gửi cho bạn lời mời kết bạn",
-            timestamp: new Date().toISOString(),
-            read: false,
-            link: "/friends",
-            user: {
-              id: 1,
-              name: "Anna Nguyễn",
-              image: "/placeholder.svg?height=40&width=40&text=AN",
-            },
-          }),
-        )
-      }, 7000)
-    }, 500)
-  }
-
-  private handleMockResponse(data: any) {
-    // Simulate responses based on the sent data
-    if (data.type === "message") {
-      // Simulate receiving a response message after a short delay
-      setTimeout(
-        () => {
-          const recipientId = data.recipientId
-          const mockUsers: Record<number, { name: string; image: string }> = {
-            1: { name: "Anna Nguyễn", image: "/placeholder.svg?height=40&width=40&text=AN" },
-            2: { name: "Minh Trần", image: "/placeholder.svg?height=40&width=40&text=MT" },
-            3: { name: "Hương Lê", image: "/placeholder.svg?height=40&width=40&text=HL" },
-            4: { name: "Tuấn Phạm", image: "/placeholder.svg?height=40&width=40&text=TP" },
-            5: { name: "Linh Đặng", image: "/placeholder.svg?height=40&width=40&text=LD" },
-          }
-
-          if (recipientId && mockUsers[recipientId]) {
-            const responses = [
-              "Xin chào! Bạn khỏe không?",
-              "Hôm nay thời tiết đẹp nhỉ!",
-              "Bạn đang làm gì vậy?",
-              "Tôi vừa xem một bộ phim hay, bạn có muốn biết không?",
-              "Đã lâu không gặp bạn rồi!",
-            ]
-
-            const randomResponse = responses[Math.floor(Math.random() * responses.length)]
-
-            this.handlers.message.forEach((callback) =>
-              callback({
-                type: "message",
-                id: `msg-${Date.now()}`,
-                content: randomResponse,
-                timestamp: new Date().toISOString(),
-                senderId: recipientId,
-                recipientId: "me",
-                sender: {
-                  id: recipientId,
-                  name: mockUsers[recipientId].name,
-                  image: mockUsers[recipientId].image,
-                },
-              }),
-            )
-          }
-        },
-        1000 + Math.random() * 2000,
-      )
+      console.warn("WebSocket is not connected, message not sent")
+      this.connect()
     }
   }
 }
 
-// Singleton instance
-let websocketInstance: WebSocketService | null = null
-
-export const getWebSocketService = () => {
-  if (!isClient) {
-    // Trả về một đối tượng giả nếu không phải môi trường client
-    const mockWebSocketService: Pick<WebSocketService, 'connect' | 'disconnect' | 'on' | 'off' | 'send'> = {
-      connect: () => {},
-      disconnect: () => {},
-      on: () => () => {},
-      off: () => {},
-      send: () => {},
-    };
-    return mockWebSocketService;
-  }
-
-  if (!websocketInstance) {
-    // In a real app, this would be your WebSocket server URL
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "wss://api.example.com/ws"
-    websocketInstance = new WebSocketService(wsUrl, true) // true for mock mode
-  }
-  return websocketInstance
+export function getWebSocketService() {
+  instance ??= new WebSocketService();
+  return instance
 }

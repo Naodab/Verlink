@@ -147,93 +147,95 @@ public class UserRepositoryAdapter implements UserRepositoryPort {
     @Override
     @Retry(name = "redisCalls")
     public boolean existsByEmail(String email) {
-        if (!cacheEnabled) {
-            return jpaUserRepository.existsByEmail(email);
-        }
-
-        emailLock.readLock().lock();
-        try {
-            Boolean exists = redisTemplate.opsForSet().isMember(EMAIL_SET, email);
-            if (Boolean.TRUE.equals(exists)) {
-                return true;
-            }
-
-            emailLock.readLock().unlock();
-            emailLock.writeLock().lock();
-            try {
-                exists = redisTemplate.opsForSet().isMember(EMAIL_SET, email);
-                if (Boolean.TRUE.equals(exists)) {
-                    return true;
-                }
-
-                boolean dbExists = jpaUserRepository.existsByEmail(email);
-                if (dbExists) {
-                    try {
-                        redisTemplate.opsForSet().add(EMAIL_SET, email);
-                    } catch (Exception e) {
-                        log.warn("Cannot update email cache for {}", email, e);
-                    }
-                }
-                return dbExists;
-            } finally {
-                emailLock.readLock().lock();
-                emailLock.writeLock().unlock();
-            }
-        } catch (Exception e) {
-            log.warn("Redis error when checking email existence, falling back to DB", e);
-            return jpaUserRepository.existsByEmail(email);
-        } finally {
-            emailLock.readLock().unlock();
-        }
+//        if (!cacheEnabled) {
+//            return jpaUserRepository.existsByEmail(email);
+//        }
+//
+//        emailLock.readLock().lock();
+//        try {
+//            Boolean exists = redisTemplate.opsForSet().isMember(EMAIL_SET, email);
+//            if (Boolean.TRUE.equals(exists)) {
+//                return true;
+//            }
+//
+//            emailLock.readLock().unlock();
+//            emailLock.writeLock().lock();
+//            try {
+//                exists = redisTemplate.opsForSet().isMember(EMAIL_SET, email);
+//                if (Boolean.TRUE.equals(exists)) {
+//                    return true;
+//                }
+//
+//                boolean dbExists = jpaUserRepository.existsByEmail(email);
+//                if (dbExists) {
+//                    try {
+//                        redisTemplate.opsForSet().add(EMAIL_SET, email);
+//                    } catch (Exception e) {
+//                        log.warn("Cannot update email cache for {}", email, e);
+//                    }
+//                }
+//                return dbExists;
+//            } finally {
+//                emailLock.readLock().lock();
+//                emailLock.writeLock().unlock();
+//            }
+//        } catch (Exception e) {
+//            log.warn("Redis error when checking email existence, falling back to DB", e);
+//            return jpaUserRepository.existsByEmail(email);
+//        } finally {
+//            emailLock.readLock().unlock();
+//        }
+        return jpaUserRepository.existsByEmail(email);
     }
 
     @Override
     @Retry(name = "redisCalls")
     public boolean existsByPhone(String phone) {
-        if (!cacheEnabled) {
-            return jpaUserRepository.existsByPhone(phone);
-        }
-
-        phoneLock.readLock().lock();
-        try {
-            Boolean exists = redisTemplate.execute(
-                    checkAndAddScript,
-                    Collections.singletonList(PHONE_SET),
-                    phone
-            );
-
-            if (Boolean.TRUE.equals(exists)) {
-                return true;
-            }
-
-            phoneLock.readLock().unlock();
-            phoneLock.writeLock().lock();
-            try {
-                exists = redisTemplate.opsForSet().isMember(PHONE_SET, phone);
-                if (Boolean.TRUE.equals(exists)) {
-                    return true;
-                }
-
-                boolean dbExists = jpaUserRepository.existsByPhone(phone);
-                if (dbExists) {
-                    try {
-                        redisTemplate.opsForSet().add(PHONE_SET, phone);
-                    } catch (Exception e) {
-                        log.warn("Cannot update phone cache for {}", phone, e);
-                    }
-                }
-                return dbExists;
-            } finally {
-                // Hạ cấp lại thành read lock
-                phoneLock.readLock().lock();
-                phoneLock.writeLock().unlock();
-            }
-        } catch (Exception e) {
-            log.warn("Redis error when checking phone existence, falling back to DB", e);
-            return jpaUserRepository.existsByPhone(phone);
-        } finally {
-            phoneLock.readLock().unlock();
-        }
+//        if (!cacheEnabled) {
+//            return jpaUserRepository.existsByPhone(phone);
+//        }
+//
+//        phoneLock.readLock().lock();
+//        try {
+//            Boolean exists = redisTemplate.execute(
+//                    checkAndAddScript,
+//                    Collections.singletonList(PHONE_SET),
+//                    phone
+//            );
+//
+//            if (Boolean.TRUE.equals(exists)) {
+//                return true;
+//            }
+//
+//            phoneLock.readLock().unlock();
+//            phoneLock.writeLock().lock();
+//            try {
+//                exists = redisTemplate.opsForSet().isMember(PHONE_SET, phone);
+//                if (Boolean.TRUE.equals(exists)) {
+//                    return true;
+//                }
+//
+//                boolean dbExists = jpaUserRepository.existsByPhone(phone);
+//                if (dbExists) {
+//                    try {
+//                        redisTemplate.opsForSet().add(PHONE_SET, phone);
+//                    } catch (Exception e) {
+//                        log.warn("Cannot update phone cache for {}", phone, e);
+//                    }
+//                }
+//                return dbExists;
+//            } finally {
+//                // Hạ cấp lại thành read lock
+//                phoneLock.readLock().lock();
+//                phoneLock.writeLock().unlock();
+//            }
+//        } catch (Exception e) {
+//            log.warn("Redis error when checking phone existence, falling back to DB", e);
+//            return jpaUserRepository.existsByPhone(phone);
+//        } finally {
+//            phoneLock.readLock().unlock();
+//        }
+        return jpaUserRepository.existsByPhone(phone);
     }
 
     @Override
@@ -260,32 +262,33 @@ public class UserRepositoryAdapter implements UserRepositoryPort {
 
     @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     protected Optional<User> findUserByIdFromDb(String id) {
-        String key = USER_PREFIX_REDIS + id;
-        return jpaUserRepository.findById(id)
-            .map(userMapper::toDomain)
-            .map(user -> {
-                if (cacheEnabled) {
-                    try {
-                        List<String> keys = List.of(
-                                key,
-                                EMAIL_SET,
-                                PHONE_SET
-                        );
-
-                        List<String> args = List.of(
-                                serializeUser(user),
-                                String.valueOf(userTTL),
-                                user.getEmail(),
-                                user.getPhone()
-                        );
-
-                        redisTemplate.execute(atomicUpdateScript, keys, args.toArray());
-                    } catch (Exception e) {
-                        log.warn("Failed to update Redis cache for user {}", id, e);
-                    }
-                }
-                return user;
-            });
+//        String key = USER_PREFIX_REDIS + id;
+//        return jpaUserRepository.findById(id)
+//            .map(userMapper::toDomain)
+//            .map(user -> {
+//                if (cacheEnabled) {
+//                    try {
+//                        List<String> keys = List.of(
+//                                key,
+//                                EMAIL_SET,
+//                                PHONE_SET
+//                        );
+//
+//                        List<String> args = List.of(
+//                                serializeUser(user),
+//                                String.valueOf(userTTL),
+//                                user.getEmail(),
+//                                user.getPhone()
+//                        );
+//
+//                        redisTemplate.execute(atomicUpdateScript, keys, args.toArray());
+//                    } catch (Exception e) {
+//                        log.warn("Failed to update Redis cache for user {}", id, e);
+//                    }
+//                }
+//                return user;
+//            });
+        return jpaUserRepository.findById(id).map(userMapper::toDomain);
     }
 
     private String serializeUser(User user) {
